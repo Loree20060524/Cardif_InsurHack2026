@@ -1,0 +1,21 @@
+# Python bytecode and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# RegIntel runtime caches and downloaded source snapshots
+regintel_ai_cache_v*.json
+regintel_cache_v*.json
+regintel_source_store_v*.json
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

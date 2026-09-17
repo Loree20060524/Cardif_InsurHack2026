@@ -1,0 +1,612 @@
+/* =====================================================
+   Detail
+===================================================== */
+
+.detail{
+
+    padding:18px;
+}
+
+
+.detail-title{
+
+    border-bottom:
+        1px solid
+        var(--line);
+
+    padding-bottom:15px;
+}
+
+
+.detail-title h2{
+
+    font-size:20px;
+
+    line-height:1.45;
+
+    margin:
+        10px 0 5px;
+}
+
+
+.detail-title p{
+
+    margin:0;
+
+    color:var(--muted);
+
+    font-size:11px;
+
+    line-height:1.65;
+}
+
+
+.detail-meta{
+
+    display:flex;
+
+    gap:6px;
+
+    align-items:center;
+
+    flex-wrap:wrap;
+}
+
+
+.block{
+
+    padding:
+        16px 0;
+
+    border-bottom:
+        1px solid
+        #edf1ef;
+}
+
+
+.block h3{
+
+    font-size:13px;
+
+    margin:
+        0 0 10px;
+}
+
+
+.summary{
+
+    background:#f8faf9;
+
+    border:
+        1px solid
+        var(--line);
+
+    padding:
+        12px 13px;
+
+    border-radius:9px;
+
+    font-size:12px;
+
+    line-height:1.8;
+}
+
+
+.source-link{
+
+    display:inline-block;
+
+    margin-top:8px;
+
+    color:var(--brand);
+
+    font-weight:800;
+
+    text-decoration:none;
+}
+
+
+/* =====================================================
+   AI Stats
+===================================================== */
+
+.ai-grid{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0,1fr)
+        );
+
+    gap:8px;
+
+    margin-top:16px;
+}
+
+
+.ai-stat{
+
+    background:#f8faf9;
+
+    border:
+        1px solid
+        var(--line);
+
+    border-radius:9px;
+
+    padding:11px;
+}
+
+
+.ai-stat span{
+
+    display:block;
+
+    color:var(--muted);
+
+    font-size:10px;
+
+    font-weight:800;
+
+    margin-bottom:6px;
+}
+
+
+.ai-stat b{
+
+    display:block;
+
+    font-size:13px;
+
+    line-height:1.4;
+}
+
+
+.ai-note{
+
+    margin-top:14px;
+
+    background:#f6faf8;
+
+    border:
+        1px dashed
+        #c9dad5;
+
+    color:#60706b;
+
+    border-radius:8px;
+
+    padding:
+        10px 12px;
+
+    font-size:10px;
+
+    line-height:1.7;
+}
+
+
+/* =====================================================
+   Departments
+===================================================== */
+
+.impact-row{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0,1fr)
+        );
+
+    gap:8px;
+}
+
+
+.impact{
+
+    border:
+        1px solid
+        var(--line);
+
+    border-radius:9px;
+
+    padding:12px;
+
+    background:#fff;
+}
+
+
+.impact b{
+
+    display:block;
+
+    font-size:12px;
+
+    color:var(--brand);
+}
+
+
+.impact p{
+
+    margin:
+        6px 0 0;
+
+    color:var(--muted);
+
+    font-size:11px;
+
+    line-height:1.6;
+}
+
+
+.attention-list,
+.recommendations{
+
+    margin:0;
+
+    padding-left:20px;
+}
+
+
+.attention-list li,
+.recommendations li{
+
+    font-size:12px;
+
+    line-height:1.75;
+
+    margin:
+        6px 0;
+}
+
+
+.detail-actions{
+
+    display:flex;
+
+    gap:8px;
+
+    padding-top:16px;
+
+    flex-wrap:wrap;
+}
+
+
+.empty{
+
+    padding:26px;
+
+    color:var(--muted);
+
+    font-size:12px;
+
+    text-align:center;
+}
+
+
+/* =====================================================
+   監理影響圖
+===================================================== */
+
+.impact-chain{
+
+    display:grid;
+
+    grid-template-columns:
+        1fr
+        34px
+        1fr
+        34px
+        1fr;
+
+    align-items:stretch;
+
+    gap:8px;
+}
+
+
+.chain-card{
+
+    border:
+        1px solid
+        var(--line);
+
+    border-radius:11px;
+
+    background:#fbfdfc;
+
+    padding:13px;
+
+    min-width:0;
+}
+
+
+.chain-card .step{
+
+    width:26px;
+
+    height:26px;
+
+    border-radius:8px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:
+        var(--soft);
+
+    color:
+        var(--brand);
+
+    font-size:10px;
+
+    font-weight:900;
+
+    margin-bottom:8px;
+}
+
+
+.chain-card h4{
+
+    font-size:12px;
+
+    margin:
+        0 0 8px;
+}
+
+
+.chain-card ul{
+
+    margin:0;
+
+    padding-left:18px;
+}
+
+
+.chain-card li{
+
+    font-size:11px;
+
+    line-height:1.65;
+
+    margin:
+        4px 0;
+}
+
+
+.chain-arrow{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    color:#8ba49c;
+
+    font-size:22px;
+
+    font-weight:900;
+}
+
+
+/* =====================================================
+   Processes
+===================================================== */
+
+.process-list{
+
+    display:grid;
+
+    gap:8px;
+}
+
+
+.process-item{
+
+    border:
+        1px solid
+        var(--line);
+
+    border-radius:9px;
+
+    padding:
+        11px 12px;
+
+    background:#fff;
+}
+
+
+.process-item b{
+
+    font-size:12px;
+
+    color:var(--brand);
+}
+
+
+.process-item small{
+
+    display:block;
+
+    margin-top:4px;
+
+    color:var(--muted);
+
+    font-size:10px;
+}
+
+
+.process-item p{
+
+    margin:
+        6px 0 0;
+
+    font-size:11px;
+
+    line-height:1.6;
+
+    color:#4f5e59;
+}
+
+
+/* =====================================================
+   Management
+===================================================== */
+
+.management-grid{
+
+    display:grid;
+
+    grid-template-columns:
+        1.05fr .95fr;
+
+    gap:14px;
+}
+
+
+.card{
+
+    background:#fff;
+
+    border:
+        1px solid
+        var(--line);
+
+    border-radius:12px;
+
+    box-shadow:
+        var(--shadow);
+
+    padding:16px;
+}
+
+
+.card h2{
+
+    font-size:15px;
+
+    margin:
+        0 0 12px;
+}
+
+
+.priority-item{
+
+    display:grid;
+
+    grid-template-columns:
+        30px 1fr auto;
+
+    gap:10px;
+
+    align-items:center;
+
+    border-top:
+        1px solid
+        #edf1ef;
+
+    padding:
+        12px 0;
+}
+
+
+.priority-item:first-child{
+
+    border-top:0;
+}
+
+
+.rank{
+
+    width:27px;
+
+    height:27px;
+
+    border-radius:8px;
+
+    background:
+        var(--soft);
+
+    color:
+        var(--brand);
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    font-size:11px;
+
+    font-weight:900;
+}
+
+
+.priority-item h4{
+
+    margin:
+        0 0 4px;
+
+    font-size:12px;
+
+    line-height:1.45;
+}
+
+
+.priority-item p{
+
+    margin:0;
+
+    font-size:10px;
+
+    color:var(--muted);
+
+    line-height:1.5;
+}
+
+
+.trend-row{
+
+    display:grid;
+
+    grid-template-columns:
+        105px 1fr 28px;
+
+    gap:8px;
+
+    align-items:center;
+
+    margin:
+        11px 0;
+
+    font-size:11px;
+}
+
+
+.track{
+
+    height:7px;
+
+    background:#edf1ef;
+
+    border-radius:999px;
+
+    overflow:hidden;
+}
+
+
+.fill{
+
+    height:100%;
+
+    background:#6da397;
+
+    border-radius:999px;
+}

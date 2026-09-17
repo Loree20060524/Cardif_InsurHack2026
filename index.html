@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+>
+
+<title>
+    RegIntel｜監理情報中心
+</title>
+
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/workspace.css">
+<link rel="stylesheet" href="assets/css/intelligence.css">
+<link rel="stylesheet" href="assets/css/management.css">
+<link rel="stylesheet" href="assets/css/responsive.css">
+
+</head>
+
+
+<body>
+
+
+<div class="shell">
+
+
+<aside class="sidebar">
+
+
+<div class="brand">
+
+    RegIntel
+
+    <small>
+        監理情報中心
+    </small>
+
+</div>
+
+
+<div class="nav">
+
+    <button
+        class="active"
+        data-view="intel"
+    >
+        <span>
+            監理情報中心
+        </span>
+    </button>
+
+
+    <button
+        data-view="management"
+    >
+        <span>
+            管理摘要
+        </span>
+    </button>
+
+</div>
+
+
+<div class="side-note">
+
+    保險業 AI 監理情報與風險預警平台
+
+    <br>
+
+    監控官方監理訊號、辨識企業影響，
+
+    <br>
+
+    協助及早掌握風險與監理趨勢。
+
+</div>
+
+
+</aside>
+
+
+<main class="main">
+
+
+<header class="topbar">
+
+
+<h1 id="viewTitle">
+    監理情報中心
+</h1>
+
+
+<div class="top-actions">
+
+
+<div
+    class="status"
+    id="systemStatus"
+>
+    讀取中…
+</div>
+
+
+<div
+    class="status"
+    id="aiStatus"
+>
+    AI 狀態讀取中…
+</div>
+
+
+<button
+    class="btn"
+    id="sourcesBtn"
+>
+    資料來源
+</button>
+
+
+<button
+    class="btn primary"
+    id="refreshBtn"
+>
+    更新最新資訊
+</button>
+
+
+</div>
+
+
+</header>
+
+
+<div class="content">
+
+
+<div
+    id="connectionNotice"
+    class="notice hidden"
+>
+</div>
+
+
+<section id="intelView">
+
+
+<div
+    class="metrics"
+    id="metrics"
+>
+</div>
+
+
+<div class="toolbar">
+
+
+<input
+    class="search"
+    id="search"
+    placeholder="搜尋法規、裁罰、公告、部門或關鍵字…"
+>
+
+
+<div class="chips">
+
+
+<button
+    class="chip active"
+    data-filter="all"
+>
+    全部
+</button>
+
+
+<button
+    class="chip"
+    data-filter="penalty"
+>
+    裁罰
+</button>
+
+
+<button
+    class="chip"
+    data-filter="law"
+>
+    法規
+</button>
+
+
+<button
+    class="chip"
+    data-filter="announcement"
+>
+    公告
+</button>
+
+
+<button
+    class="chip"
+    data-filter="news"
+>
+    監理新聞
+</button>
+
+
+</div>
+
+
+</div>
+
+
+<div class="workspace">
+
+
+<section class="panel">
+
+
+<div class="panel-head">
+
+    <b>
+        最新監理訊號
+    </b>
+
+    <small>
+        依發布時間排序
+    </small>
+
+</div>
+
+
+<div
+    class="event-list"
+    id="eventList"
+>
+</div>
+
+
+</section>
+
+
+<section class="panel">
+
+
+<div
+    class="detail"
+    id="eventDetail"
+>
+
+    <div class="empty">
+        正在取得資料…
+    </div>
+
+</div>
+
+
+</section>
+
+
+</div>
+
+
+</section>
+
+
+<section
+    id="managementView"
+    class="hidden"
+>
+
+
+<div class="management-grid">
+
+
+<div class="card">
+
+
+<h2>
+    建議優先檢視
+</h2>
+
+
+<div id="priorityList">
+</div>
+
+
+<button
+    class="btn primary"
+    id="reportBtn"
+    style="margin-top:10px"
+>
+    產生 AI 管理摘要
+</button>
+
+
+<div
+    id="reportBox"
+    class="report-box hidden"
+>
+</div>
+
+
+</div>
+
+
+<div class="card">
+
+
+<h2>
+    近期主題分布
+</h2>
+
+
+<div id="trendList">
+</div>
+
+
+</div>
+
+
+</div>
+
+
+</section>
+
+
+</div>
+
+
+</main>
+
+
+</div>
+
+
+<div
+    class="modal-bg hidden"
+    id="sourcesModal"
+>
+
+
+<div class="modal">
+
+
+<div class="modal-head">
+
+
+<h2>
+    資料來源狀態與診斷
+</h2>
+
+
+<button
+    class="btn"
+    id="closeSources"
+>
+    關閉
+</button>
+
+
+</div>
+
+
+<div id="sourceStatusList">
+</div>
+
+
+</div>
+
+
+</div>
+
+
+<div
+    class="toast hidden"
+    id="toast"
+>
+</div>
+
+
+<script src="assets/js/core.js"></script>
+<script src="assets/js/dashboard.js"></script>
+<script src="assets/js/ai-analysis.js"></script>
+<script src="assets/js/impact-chain.js"></script>
+<script src="assets/js/detail-view.js"></script>
+<script src="assets/js/management.js"></script>
+<script src="assets/js/sources.js"></script>
+<script src="assets/js/app.js"></script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,420 @@
+
+:root{
+
+    --bg:#f4f7f6;
+
+    --panel:#fff;
+
+    --line:#dfe7e4;
+
+    --text:#1c2925;
+
+    --muted:#6d7b77;
+
+    --brand:#174f43;
+
+    --brand-dark:#123e35;
+
+    --soft:#edf5f2;
+
+    --warn-bg:#fff8e8;
+
+    --warn-border:#ead39a;
+
+    --error:#9c2f2f;
+
+    --error-bg:#fff0f0;
+
+    --shadow:
+        0 10px 30px
+        rgba(25,58,50,.07);
+}
+
+
+*{
+    box-sizing:border-box;
+}
+
+
+html{
+    scroll-behavior:smooth;
+}
+
+
+body{
+
+    margin:0;
+
+    font-family:
+        "Noto Sans TC",
+        "Microsoft JhengHei",
+        Arial,
+        sans-serif;
+
+    background:var(--bg);
+
+    color:var(--text);
+}
+
+
+button,
+input{
+    font:inherit;
+}
+
+
+button{
+    cursor:pointer;
+}
+
+
+.hidden{
+    display:none !important;
+}
+
+
+/* =====================================================
+   整體版面
+===================================================== */
+
+.shell{
+
+    min-height:100vh;
+
+    display:grid;
+
+    grid-template-columns:
+        230px 1fr;
+}
+
+
+.sidebar{
+
+    background:
+        var(--brand-dark);
+
+    color:#fff;
+
+    padding:
+        22px 18px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:24px;
+}
+
+
+.brand{
+
+    font-size:20px;
+
+    font-weight:900;
+}
+
+
+.brand small{
+
+    display:block;
+
+    margin-top:4px;
+
+    font-size:11px;
+
+    font-weight:600;
+
+    opacity:.68;
+}
+
+
+.nav{
+
+    display:grid;
+
+    gap:7px;
+}
+
+
+.nav button{
+
+    border:0;
+
+    background:
+        transparent;
+
+    color:#d8e9e4;
+
+    text-align:left;
+
+    padding:
+        11px 12px;
+
+    border-radius:9px;
+
+    font-weight:800;
+}
+
+
+.nav button:hover,
+.nav button.active{
+
+    background:
+        rgba(255,255,255,.12);
+
+    color:#fff;
+}
+
+
+.side-note{
+
+    margin-top:auto;
+
+    font-size:11px;
+
+    line-height:1.7;
+
+    color:#b8d2cb;
+}
+
+
+.main{
+    min-width:0;
+}
+
+
+/* =====================================================
+   Topbar
+===================================================== */
+
+.topbar{
+
+    min-height:70px;
+
+    background:#fff;
+
+    border-bottom:
+        1px solid
+        var(--line);
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:
+        space-between;
+
+    gap:14px;
+
+    padding:
+        12px 26px;
+
+    position:sticky;
+
+    top:0;
+
+    z-index:10;
+}
+
+
+.topbar h1{
+
+    margin:0;
+
+    font-size:17px;
+}
+
+
+.top-actions{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:
+        flex-end;
+
+    gap:9px;
+
+    flex-wrap:wrap;
+}
+
+
+.status{
+
+    font-size:11px;
+
+    color:var(--muted);
+}
+
+
+.status b{
+
+    color:var(--brand);
+}
+
+
+/* =====================================================
+   Buttons
+===================================================== */
+
+.btn{
+
+    border:
+        1px solid
+        var(--line);
+
+    background:#fff;
+
+    color:var(--text);
+
+    padding:
+        9px 12px;
+
+    border-radius:8px;
+
+    font-weight:800;
+
+    font-size:12px;
+}
+
+
+.btn:hover{
+
+    border-color:#bacbc6;
+}
+
+
+.btn.primary{
+
+    background:
+        var(--brand);
+
+    color:#fff;
+
+    border-color:
+        var(--brand);
+}
+
+
+.btn:disabled{
+
+    opacity:.55;
+
+    cursor:not-allowed;
+}
+
+
+/* =====================================================
+   Content
+===================================================== */
+
+.content{
+
+    padding:
+        22px 26px 40px;
+
+    max-width:1500px;
+
+    margin:auto;
+}
+
+
+.notice{
+
+    border:
+        1px solid
+        var(--warn-border);
+
+    background:
+        var(--warn-bg);
+
+    color:#6b4d0a;
+
+    padding:
+        11px 13px;
+
+    border-radius:9px;
+
+    font-size:12px;
+
+    margin-bottom:16px;
+}
+
+
+.notice.error{
+
+    background:
+        var(--error-bg);
+
+    border-color:#edc4c4;
+
+    color:var(--error);
+}
+
+
+/* =====================================================
+   Metrics
+===================================================== */
+
+.metrics{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0,1fr)
+        );
+
+    gap:12px;
+
+    margin-bottom:16px;
+}
+
+
+.metric{
+
+    background:#fff;
+
+    border:
+        1px solid
+        var(--line);
+
+    border-radius:11px;
+
+    padding:
+        14px 16px;
+
+    box-shadow:
+        var(--shadow);
+}
+
+
+.metric span{
+
+    font-size:11px;
+
+    color:var(--muted);
+
+    font-weight:800;
+}
+
+
+.metric strong{
+
+    display:block;
+
+    font-size:25px;
+
+    margin:
+        8px 0 2px;
+}
+
+
+.metric small{
+
+    font-size:10px;
+
+    color:var(--muted);
+}
