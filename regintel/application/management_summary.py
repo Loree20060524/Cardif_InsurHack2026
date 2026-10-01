@@ -20,16 +20,11 @@ from .ai_support import (
     load_ai_cache,
     serialize_ai_cache,
 )
-from .event_analysis import has_analyzable_source_text
 
 
 # =========================================================
 # 管理摘要
 # =========================================================
-
-def has_substantive_management_summary(result: Any) -> bool:
-    return isinstance(result, dict) and len(clean_text(result.get("summary", ""))) >= 15
-
 
 def management_cache_key(
 
@@ -116,12 +111,6 @@ def generate_management_summary_ai(
     Any
 ]:
 
-    # Headlines without official body text must not become AI evidence.
-    events = [
-        event for event in events
-        if has_analyzable_source_text(event.get("description", ""))
-    ][:7]
-
     if not events:
 
         return {
@@ -149,7 +138,7 @@ def generate_management_summary_ai(
 
             "management_note":
                 (
-                    "待取得可分析的官方原文後"
+                    "待取得更多監理資訊後"
                     "再進行評估。"
                 ),
 
@@ -182,7 +171,7 @@ def generate_management_summary_ai(
         if isinstance(
             cached,
             dict
-        ) and has_substantive_management_summary(cached):
+        ):
 
             return cached
 
@@ -258,9 +247,10 @@ def generate_management_summary_ai(
             "可考慮的因應方向，但不要產生"
             "任務狀態、完成期限或執行進度。"
 
-            "trend_observations 僅就提供的"
-            "少量近期事件歸納重複出現的主題；"
-            "不足以證明長期趨勢時請明說。"
+            "trend_observations 請從多則事件"
+            "歸納監理趨勢，例如資本監理、"
+            "消保、公平待客、資安、"
+            "投資管理等。"
 
             "全部使用繁體中文。"
         )
@@ -280,26 +270,13 @@ def generate_management_summary_ai(
                         +
                         "\n\n"
                         "請產生本期管理摘要"
-                        "與近期主題觀察。"
+                        "與監理趨勢。"
                     ),
 
                 schema=
                     MANAGEMENT_SUMMARY_SCHEMA,
             )
         )
-
-
-        if not has_substantive_management_summary(result):
-            return {
-                "headline": "管理摘要待確認",
-                "summary": "模型未產生足夠的管理摘要內容，請核對官方原文後再試。",
-                "risk_outlook": "待確認",
-                "priority_events": [],
-                "priority_actions": [],
-                "trend_observations": [],
-                "management_note": f"本次選用 {len(events)} 件具可讀內容的事件，但模型結果不足，不標示為深度分析。",
-                "analysis_mode": "規則備援",
-            }
 
 
         priority_events = []
@@ -459,7 +436,7 @@ def generate_management_summary_ai(
                         "監理風險與趨勢，最終適用性"
                         "仍需由相關專業單位確認。"
                     )
-                ) + f" 本次僅分析 {len(events)} 件具可讀官方內容的近期事件。",
+                ),
 
             "analysis_mode":
                 "AI 深度分析",

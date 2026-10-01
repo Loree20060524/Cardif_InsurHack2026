@@ -53,7 +53,7 @@ def law_fingerprint(
     ]
 ) -> str:
 
-    # Metadata updates alone do not establish a change in legal requirements.
+    # A metadata correction does not establish a change in legal content.
     material = clean_text(event.get("description", ""))
 
 
@@ -70,7 +70,7 @@ def law_fingerprint(
 
 
 def has_law_content(event: dict[str, Any]) -> bool:
-    """A readable official text is required before asserting a change."""
+    """A readable regulation is not an attachment title or empty record."""
     title = clean_text(event.get("title", ""))
     description = clean_text(event.get("description", ""))
     return bool(description) and not bool(
@@ -79,7 +79,7 @@ def has_law_content(event: dict[str, Any]) -> bool:
 
 
 def has_supported_law_change(event: dict[str, Any]) -> bool:
-    """Legacy signals without a recorded content basis are not trustworthy."""
+    """Old signals without a recorded content basis must not imply a change."""
     return has_law_content(event) and bool(clean_text(event.get("change_basis", "")))
 
 
@@ -175,7 +175,7 @@ def detect_law_changes(
 
         elif not has_law_content(previous):
 
-            # The source gained readable text; that alone is not a new law.
+            # Newly parsed text alone is not proof of a new requirement.
             continue
 
 

@@ -27,11 +27,7 @@ from ..domain.risk_analysis import rule_based_analyze_event
 from ..domain.text import date_sort_key, now_iso
 from ..infrastructure.http_client import classify_error, fetch_url, robots_allowed
 from ..infrastructure.json_store import atomic_write_json, load_json_file
-from ..infrastructure.parsers import (
-    SOURCE_PARSER_VERSION,
-    normalize_source_url,
-    parse_source,
-)
+from ..infrastructure.parsers import SOURCE_PARSER_VERSION, parse_source
 from ..source_catalog import SOURCES, SOURCE_MIN_INTERVAL_SECONDS
 
 
@@ -303,9 +299,9 @@ def refresh_data(
                     []
                 )
 
-                # Old snapshots included attachment-only metadata as changes.
                 cached_signals = [
-                    event for event in cached_signals if has_supported_law_change(event)
+                    event for event in cached_signals
+                    if isinstance(event, dict) and has_supported_law_change(event)
                 ]
                 entry["signal_events"] = cached_signals
 
@@ -1001,8 +997,8 @@ def refresh_data(
         # 去重與規則分析
         # =================================================
 
-        # Keep readable law records visible even when no verified delta exists.
-        # A source snapshot is not itself a newly changed regulation.
+        # The law source snapshot remains useful even when no verified change
+        # signal exists. Do not label these baseline records as new changes.
         law_records: list[dict[str, Any]] = []
         for source_key in ("insurance_law", "law_db"):
             source_entry = store.get(source_key, {})
@@ -1010,7 +1006,10 @@ def refresh_data(
             if isinstance(records, list):
                 law_records.extend(
                     sorted(
-                        (event for event in records if has_law_content(event)),
+                        (
+                            event for event in records
+                            if isinstance(event, dict) and has_law_content(event)
+                        ),
                         key=date_sort_key,
                         reverse=True,
                     )[:30]
@@ -1039,8 +1038,6 @@ def refresh_data(
             item = dict(
                 event
             )
-
-            item["url"] = normalize_source_url(item.get("url", ""))
 
 
             item[

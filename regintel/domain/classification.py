@@ -43,16 +43,6 @@ def is_relevant(
         return True
 
 
-    # A bank's generic internal-control penalty is not an insurer penalty.
-    # Cross-industry cases can be introduced later as a separately labelled view.
-    if source_key == "fsc_penalty":
-        title = clean_text(event.get("title", "")).lower()
-        return contains_any(
-            title,
-            ("保險", "人壽", "產物", "壽險", "產險", "保經", "保代", "保單", "保戶", "理賠", "核保"),
-        )
-
-
     text = (
 
         f"{event.get('title', '')} "

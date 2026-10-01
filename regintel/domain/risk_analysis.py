@@ -190,8 +190,9 @@ def rule_based_analyze_event(
         attention.append(
 
             (
-                f"系統偵測來源文字「{change_status}」，"
-                "需核對實際條文差異、"
+                f"系統偵測此法規為"
+                f"「{change_status}」，"
+                "需確認異動內容、"
                 "生效時程及適用範圍。"
             )
         )
@@ -211,8 +212,8 @@ def rule_based_analyze_event(
         regulatory_points.append(
 
             (
-                "官方來源文字與先前紀錄不同，"
-                "尚不能單憑摘要認定條文修正；應核對實際條文"
+                "法規內容已出現版本變動，"
+                "應優先確認實際修正條文"
                 "及生效安排。"
             )
         )
@@ -255,15 +256,6 @@ def rule_based_analyze_event(
         for item
         in departments
     }
-
-
-    if enforcement and contains_any(text, ["懸帳", "退費", "退款"]):
-        attention.append(
-            "裁罰事實涉及退費或懸帳處理，應確認受款人、覆核、對帳與憑證留存控制。"
-        )
-        actions.append(
-            "抽查退費與懸帳清理案件，核對受款人檢核、授權覆核、沖銷紀錄及交易證據。"
-        )
 
 
     if (
@@ -496,13 +488,20 @@ def rule_based_analyze_event(
 
         and
 
-        (
-            contains_any(
-                text,
-                ["清償能力", "資本適足", "風險資本", "自有資本", "ifrs17", "tis", "ics"],
-            )
-            or contains_any(title, ["準備金", "財務報告", "清償能力"])
-            or contains_any(text, ["責任準備金", "特別準備金"])
+        contains_any(
+
+            text,
+
+            [
+                "清償能力",
+                "資本適足",
+                "風險資本",
+                "自有資本",
+                "準備金",
+                "ifrs17",
+                "tis",
+                "ics",
+            ]
         )
     ):
 
@@ -535,13 +534,17 @@ def rule_based_analyze_event(
 
         and
 
-        (
-            contains_any(text, ["商品設計", "商品條款", "保障內容"])
-            or (
-                "保單條款" in title
-                and contains_any(title, ["修正", "變更", "審查"])
-            )
-            or ("保險商品" in title and "銷售" not in title)
+        contains_any(
+
+            text,
+
+            [
+                "保險商品",
+                "商品設計",
+                "商品條款",
+                "保單條款",
+                "保障內容",
+            ]
         )
     ):
 

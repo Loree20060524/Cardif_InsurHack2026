@@ -21,6 +21,7 @@ from .ai_support import (
 
 
 def has_analyzable_source_text(description: str) -> bool:
+    """Require source content, not a crawler placeholder, for deep analysis."""
     text = clean_text(description)
     if len(text) < 40:
         return False
@@ -216,9 +217,8 @@ def analyze_event_with_ai(
             f"類別："
             f"{event.get('category', '')}\n"
 
-            f"來源資料變化："
-            f"{event.get('change_status', '無')}；"
-            f"{event.get('change_basis', '實際條文差異待核對')}\n"
+            f"系統偵測異動："
+            f"{event.get('change_status', '無')}\n"
 
             f"{content_source}：\n"
             f"{description}"

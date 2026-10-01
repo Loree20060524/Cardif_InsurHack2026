@@ -2,24 +2,6 @@
    AI Management Report
 ===================================================== */
 
-.trend-scope {
-    margin: 0 0 14px;
-    color: var(--muted);
-    font-size: 11px;
-    line-height: 1.6;
-}
-
-.management-grid h2 small {
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 500;
-}
-
-.trend-row b {
-    text-align: right;
-    white-space: nowrap;
-}
-
 .report-box{
 
     margin-top:14px;
