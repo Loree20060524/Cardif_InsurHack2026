@@ -16,13 +16,13 @@ from ..config import (
     OLLAMA_MODEL,
     SOURCE_STORE_FILE,
 )
-from ..domain.classification import is_relevant
+from ..domain.event_selection import select_visible_events
 from ..domain.law_changes import detect_law_changes, merge_recent_law_signals
 from ..domain.risk_analysis import rule_based_analyze_event
-from ..domain.text import date_sort_key, now_iso
+from ..domain.text import now_iso
 from ..infrastructure.http_client import classify_error, fetch_url, robots_allowed
 from ..infrastructure.json_store import atomic_write_json, load_json_file
-from ..infrastructure.parsers import parse_source
+from ..infrastructure.parsers import SOURCE_PARSER_VERSION, parse_source
 from ..source_catalog import SOURCES, SOURCE_MIN_INTERVAL_SECONDS
 
 
@@ -336,6 +336,19 @@ def refresh_data(
             )
 
 
+            parser_outdated = (
+
+                entry.get(
+                    "parser_version",
+                    ""
+                )
+
+                !=
+
+                SOURCE_PARSER_VERSION
+            )
+
+
             interval = (
                 SOURCE_MIN_INTERVAL_SECONDS[
                     source_key
@@ -358,6 +371,10 @@ def refresh_data(
 
 
             elif (
+                not force
+                and
+                not parser_outdated
+                and
                 last_checked_ts
                 and
                 now
@@ -496,17 +513,27 @@ def refresh_data(
                         "url"
                     ],
 
-                    str(
-                        entry.get(
-                            "etag",
-                            ""
+                    (
+                        ""
+                        if force or parser_outdated
+                        else
+                        str(
+                            entry.get(
+                                "etag",
+                                ""
+                            )
                         )
                     ),
 
-                    str(
-                        entry.get(
-                            "last_modified",
-                            ""
+                    (
+                        ""
+                        if force or parser_outdated
+                        else
+                        str(
+                            entry.get(
+                                "last_modified",
+                                ""
+                            )
                         )
                     ),
                 )
@@ -711,6 +738,11 @@ def refresh_data(
                     entry[
                         "events"
                     ] = parsed_events
+
+
+                    entry[
+                        "parser_version"
+                    ] = SOURCE_PARSER_VERSION
 
 
                     entry[
@@ -998,24 +1030,10 @@ def refresh_data(
         )
 
 
-        events.sort(
-            key=date_sort_key,
-            reverse=True
+        visible = select_visible_events(
+            events,
+            limit=120,
         )
-
-
-        visible = [
-
-            event
-
-            for event
-            in events
-
-            if is_relevant(
-                event
-            )
-
-        ][:120]
 
 
         last_success_ts = max(

@@ -80,17 +80,9 @@
     .shell{
 
         grid-template-columns:
-            80px 1fr;
+            var(--sidebar-rail)
+            minmax(0,1fr);
     }
-
-
-    .brand small,
-    .side-note,
-    .nav button span{
-
-        display:none;
-    }
-
 
     .workspace,
     .management-grid{
@@ -111,13 +103,59 @@
     max-width:700px
 ){
 
+    :root{
+        --sidebar-rail:68px;
+    }
+
+
     .shell{
-        display:block;
+
+        grid-template-columns:
+            var(--sidebar-rail)
+            minmax(0,1fr);
     }
 
 
     .sidebar{
-        display:none;
+
+        width:
+            var(--sidebar-rail);
+
+        padding:
+            10px 6px;
+    }
+
+
+    .sidebar.expanded{
+
+        width:
+            min(
+                var(--sidebar-width),
+                calc(100vw - 36px)
+            );
+
+        padding:
+            10px 12px;
+    }
+
+
+    .sidebar-toggle{
+
+        flex-basis:44px;
+
+        width:44px;
+
+        height:44px;
+    }
+
+
+    .nav button{
+        min-height:64px;
+    }
+
+
+    .main{
+        grid-column:2;
     }
 
 
@@ -133,13 +171,27 @@
     }
 
 
-    .metrics{
+    .topbar-heading{
 
-        grid-template-columns:
-            repeat(
-                2,
-                1fr
-            );
+        flex:
+            1 1 190px;
+    }
+
+
+    .topbar .site-title{
+
+        font-size:18px;
+    }
+
+
+    .site-subtitle{
+
+        flex-wrap:wrap;
+
+        gap:
+            2px 5px;
+
+        font-size:10px;
     }
 
 
@@ -156,5 +208,103 @@
 
         justify-content:
             flex-start;
+    }
+
+
+    .toolbar{
+
+        grid-template-columns:
+            minmax(0,1fr);
+    }
+
+
+    .advanced-filter{
+
+        width:100%;
+    }
+
+
+    .advanced-filter-panel{
+
+        right:auto;
+
+        left:0;
+
+        width:100%;
+
+        max-height:
+            calc(100vh - 210px);
+
+        overflow-y:auto;
+    }
+
+
+    .advanced-filter-actions{
+
+        align-items:flex-start;
+
+        flex-direction:column;
+    }
+
+
+    .advanced-filter-actions > div{
+
+        width:100%;
+    }
+
+
+    .advanced-filter-actions button{
+
+        flex:1;
+    }
+
+
+    .news-ticker{
+
+        grid-template-columns:
+            auto
+            minmax(0,1fr);
+    }
+
+
+    .ticker-label{
+
+        padding:
+            0 9px;
+
+        font-size:9px;
+    }
+
+
+    .ticker-item{
+
+        max-width:
+            min(
+                430px,
+                calc(100vw - 140px)
+            );
+    }
+}
+
+
+@media(
+    prefers-reduced-motion:reduce
+){
+
+    .ticker-track{
+
+        animation:none;
+    }
+
+
+    .ticker-viewport{
+
+        overflow-x:auto;
+    }
+
+
+    .ticker-group[aria-hidden="true"]{
+
+        display:none;
     }
 }

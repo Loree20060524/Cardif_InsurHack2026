@@ -6,29 +6,21 @@ function renderDetail(
     triggerAI=true
 ){
 
-    const event =
-
-        state.events.find(
-
-            item =>
-                item.id
-                ===
-                state.selected
-        )
-
-        ||
-
-        state.events[0];
+    const event = state.selected === null
+        ? null
+        : (
+            state.events.find(
+                item => item.id === state.selected
+            )
+            || state.events[0]
+        );
 
 
     if(!event){
 
         $('eventDetail').innerHTML = `
-
-            <div class="empty">
-
-                尚未取得可顯示的監理資訊。
-
+            <div class="d-empty">
+                ${state.events.length ? '請調整搜尋或篩選條件。' : '尚未取得可顯示的監理資訊。'}
             </div>
         `;
 
@@ -55,6 +47,16 @@ function renderDetail(
     const aiIsLoading =
         state.aiLoading.has(
             event.id
+        );
+
+    const aiFailed =
+        state.aiFailed.has(
+            event.id
+        );
+
+    const aiHasInsufficientContent =
+        /未提供可解析的/.test(
+            analysis.analysis_note || ''
         );
 
 
@@ -155,17 +157,6 @@ function renderDetail(
                 }
 
 
-                <span class="workflow">
-
-                    ${esc(
-                        workflowStatus(
-                            event
-                        )
-                    )}
-
-                </span>
-
-
                 ${
                     showNature
 
@@ -240,7 +231,17 @@ function renderDetail(
 
                                 :
 
-                                'AI 待分析'
+                                (
+                                    aiFailed
+
+                                    ?
+
+                                    'AI 分析未完成'
+
+                                    :
+
+                                    'AI 待分析'
+                                )
                             )
 
                             :
@@ -267,8 +268,8 @@ function renderDetail(
             <p>
 
                 ${esc(
-                    formatDate(
-                        event.published_at
+                    formatEventDate(
+                        event
                     )
                 )}
 
@@ -292,7 +293,7 @@ function renderDetail(
 
 
             ${
-                isAI
+                (isAI || state.ai.enabled)
 
                 ?
 
@@ -309,9 +310,9 @@ function renderDetail(
                         <b>
 
                             ${esc(
-                                analysis.risk_level
-                                ||
-                                '待確認'
+                                isAI
+                                ? (analysis.risk_level || '待確認')
+                                : (aiIsLoading ? '分析中…' : '待 AI 分析')
                             )}
 
                         </b>
@@ -328,28 +329,9 @@ function renderDetail(
                         <b>
 
                             ${esc(
-                                analysis.importance
-                                ||
-                                '待確認'
-                            )}
-
-                        </b>
-
-                    </div>
-
-
-                    <div class="ai-stat">
-
-                        <span>
-                            建議處理時程
-                        </span>
-
-                        <b>
-
-                            ${esc(
-                                analysis.handling_deadline
-                                ||
-                                '待確認'
+                                isAI
+                                ? (analysis.importance || '待確認')
+                                : (aiIsLoading ? '分析中…' : '待 AI 分析')
                             )}
 
                         </b>
@@ -365,13 +347,11 @@ function renderDetail(
 
                         <b>
 
-                            ${esc(
-                                departmentLabel(
-                                    analysis.responsible_department
-                                    ||
-                                    '待確認'
-                                )
-                            )}
+                                ${esc(
+                                    isAI
+                                    ? departmentLabel(analysis.responsible_department || '待確認')
+                                    : (aiIsLoading ? '分析中…' : '待 AI 分析')
+                                )}
 
                         </b>
 
@@ -476,7 +456,7 @@ function renderDetail(
 
 
                 <h3>
-                    AI 判讀的監理重點
+                    ${isAI ? 'AI 判讀的監理重點' : '初步監理重點'}
                 </h3>
 
 
@@ -729,7 +709,17 @@ function renderDetail(
 
                         :
 
-                        '目前先顯示規則備援內容，系統將載入 AI 深度分析。'
+                        (
+                            aiFailed
+
+                            ?
+
+                            'AI 深度分析尚未完成；以下內容為規則備援結果，請人工覆核。'
+
+                            :
+
+                            '以下先顯示規則備援結果；AI 深度分析完成後會更新風險、影響部門與因應建議。'
+                        )
                     )
                 )
 
@@ -740,6 +730,31 @@ function renderDetail(
 
 
         </div>
+
+
+        ${
+            state.ai.enabled
+
+            ?
+
+            `
+            <div class="d-ai-controls">
+                ${
+                    aiIsLoading
+                    ? '<span>正在依來源內容進行分析…</span>'
+                    : (
+                        aiHasInsufficientContent
+                        ? '<span>來源內文不足，暫無法進行可靠的深度分析。</span>'
+                        : `<button type="button" class="d-detail-retry" id="retryAI">${aiFailed ? '重試 AI 分析' : '進行 AI 深度分析'}</button>`
+                    )
+                }
+            </div>
+            `
+
+            :
+
+            ''
+        }
 
 
         <div class="detail-actions">
@@ -808,6 +823,16 @@ function renderDetail(
                 );
             }
         };
+
+    const retryAIButton = $('retryAI');
+    if(retryAIButton){
+        retryAIButton.onclick = () => {
+            state.aiFailed.delete(event.id);
+            state.aiRequested.delete(event.id);
+            ensureAIAnalysis(event);
+            renderDetail(false);
+        };
+    }
 
 
     if(triggerAI){

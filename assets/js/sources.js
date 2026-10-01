@@ -41,8 +41,6 @@ function groupHealth(
 
     return 'fail';
 }
-
-
 function groupStatusText(
     items
 ){
@@ -433,85 +431,4 @@ function renderSources(){
             `
         )
         .join('');
-}
-
-
-/* =====================================================
-   System Status
-===================================================== */
-
-function updateSystemStatus(){
-
-    const groups =
-        sourceGroups();
-
-
-    const total =
-        Object.keys(
-            groups
-        ).length;
-
-
-    const healthy =
-        sourceHealthyGroupCount();
-
-
-    $('systemStatus').innerHTML =
-
-        `${healthy}/${total || 5} 類來源可用`
-
-        +
-
-        ` · `
-
-        +
-
-        `<b>${
-            state.stale
-            ?
-            '部分來源異常'
-            :
-            '資料已更新'
-        }</b>`;
-
-
-    $('aiStatus').innerHTML =
-
-        state.ai.enabled
-
-        ?
-
-        (
-            `<b>AI 已啟用</b> · `
-
-            +
-
-            `${
-                esc(
-                    state.ai.provider
-                    ||
-                    'Ollama（本機）'
-                )
-            }`
-
-            +
-
-            (
-                state.ai.model
-
-                ?
-
-                ` · ${esc(
-                    state.ai.model
-                )}`
-
-                :
-
-                ''
-            )
-        )
-
-        :
-
-        '<b>AI 未啟用</b> · 規則備援';
 }

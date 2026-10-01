@@ -67,11 +67,11 @@ def rule_based_analyze_event(
             {
 
                 "department":
-                    "法令遵循部",
+                    "法令遵循",
 
                 "reason":
                     (
-                        "建議先由法令遵循部"
+                        "建議先由法令遵循單位"
                         "確認事件適用性及與"
                         "公司業務的關聯。"
                     ),
@@ -81,7 +81,7 @@ def rule_based_analyze_event(
             {
 
                 "department":
-                    "風險管理部",
+                    "風險管理",
 
                 "reason":
                     (
@@ -263,9 +263,8 @@ def rule_based_analyze_event(
         department_set
         .intersection(
             {
-                "資訊安全部",
-                "個資／資料治理單位",
-                "資訊科技部",
+                "資訊安全／個資治理",
+                "資訊科技",
             }
         )
 
@@ -309,7 +308,7 @@ def rule_based_analyze_event(
 
     if (
 
-        "採購／委外管理單位"
+        "風險管理"
         in
         department_set
 
@@ -350,7 +349,7 @@ def rule_based_analyze_event(
 
     if (
 
-        "業務通路管理部"
+        "業務通路／行銷"
         in
         department_set
 
@@ -394,8 +393,8 @@ def rule_based_analyze_event(
         department_set
         .intersection(
             {
-                "理賠部",
-                "客戶服務部",
+                "理賠",
+                "客戶服務／申訴",
             }
         )
 
@@ -436,7 +435,7 @@ def rule_based_analyze_event(
 
     if (
 
-        "投資管理部"
+        "投資／資產負債管理"
         in
         department_set
 
@@ -481,9 +480,9 @@ def rule_based_analyze_event(
         department_set
         .intersection(
             {
-                "風險管理部",
-                "財務部",
-                "精算部",
+                "風險管理",
+                "財務／會計",
+                "商品／精算",
             }
         )
 
@@ -529,7 +528,7 @@ def rule_based_analyze_event(
 
     if (
 
-        "商品發展部"
+        "商品／精算"
         in
         department_set
 
@@ -600,7 +599,7 @@ def rule_based_analyze_event(
         actions = [
 
             (
-                "由法令遵循部完成"
+                "由法令遵循單位完成"
                 "初步適用性確認，再決定"
                 "是否需要跨部門影響評估。"
             )
@@ -649,9 +648,6 @@ def rule_based_analyze_event(
         "importance":
             "待確認",
 
-        "handling_deadline":
-            "待確認",
-
         "responsible_department":
             (
                 departments[0][
@@ -659,7 +655,7 @@ def rule_based_analyze_event(
                 ]
                 if departments
                 else
-                "法令遵循部"
+                "法令遵循"
             ),
 
         "regulatory_points":
@@ -680,7 +676,7 @@ def rule_based_analyze_event(
         "management_summary":
             (
                 f"{summary} 建議由"
-                f"{departments[0]['department'] if departments else '法令遵循部'}"
+                f"{departments[0]['department'] if departments else '法令遵循'}"
                 "先完成適用性與"
                 "風險影響確認。"
             ),

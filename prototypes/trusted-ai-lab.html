@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RegIntel 可信賴監理 AI 實驗室｜Prototype</title>
+
+<!--
+    PROTOTYPE ONLY — 不連接真實模型，不儲存資料，不屬於正式網站。
+    Three variants of a trustworthy regulatory-AI workspace, switchable via ?variant=A|B|C.
+-->
+
+<style>
+:root{
+    --ink:#172620;
+    --muted:#687973;
+    --line:#dce6e2;
+    --paper:#ffffff;
+    --canvas:#f2f6f4;
+    --green:#12483d;
+    --green-2:#196655;
+    --mint:#e8f5f0;
+    --aqua:#d9eee6;
+    --amber:#a96f14;
+    --amber-bg:#fff6df;
+    --red:#9c3d3d;
+    --red-bg:#fff0ef;
+    --blue:#245b79;
+    --shadow:0 16px 44px rgba(18,72,61,.10);
+}
+
+*{box-sizing:border-box}
+
+html{scroll-behavior:smooth}
+
+body{
+    margin:0;
+    min-height:100vh;
+    color:var(--ink);
+    background:var(--canvas);
+    font-family:"Noto Sans TC","Microsoft JhengHei",Arial,sans-serif;
+}
+
+button{font:inherit;cursor:pointer}
+
+.prototype-ribbon{
+    position:fixed;
+    top:17px;
+    right:auto;
+    bottom:auto;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:90;
+    padding:6px 10px;
+    border:1px solid rgba(255,255,255,.45);
+    border-radius:999px;
+    color:#fff;
+    background:#8f5a13;
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.08em;
+    box-shadow:0 6px 18px rgba(80,50,10,.18);
+}
+
+.app-shell{
+    min-height:100vh;
+    display:grid;
+    grid-template-columns:80px minmax(0,1fr);
+}
+
+.rail{
+    position:fixed;
+    inset:0 auto 0 0;
+    width:80px;
+    padding:14px 9px;
+    color:#fff;
+    background:var(--green);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+    z-index:20;
+}
+
+.hamburger{
+    width:48px;
+    height:48px;
+    border:0;
+    border-radius:50%;
+    color:#fff;
+    background:rgba(255,255,255,.08);
+    font-size:22px;
+}
+
+.rail-item{
+    width:62px;
+    min-height:66px;
+    border:0;
+    border-radius:12px;
+    background:transparent;
+    color:#c9ddd7;
+    display:grid;
+    place-items:center;
+    gap:3px;
+    padding:8px 4px;
+    font-size:10px;
+    font-weight:800;
+}
+
+.rail-item.active{
+    color:#fff;
+    background:rgba(255,255,255,.13);
+}
+
+.rail-icon{font-size:22px;line-height:1}
+
+.rail-spacer{flex:1}
+
+.main{grid-column:2;min-width:0;padding-bottom:88px}
+
+.topbar{
+    min-height:70px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+    padding:12px 128px 12px 26px;
+    border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.95);
+    position:sticky;
+    top:0;
+    z-index:10;
+    backdrop-filter:blur(12px);
+}
+
+.topbar-title strong{display:block;font-size:17px}
+.topbar-title small{display:block;margin-top:3px;color:var(--muted);font-size:11px}
+
+.mode-switch{
+    display:flex;
+    gap:5px;
+    padding:4px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    background:#f5f8f7;
+}
+
+.mode-switch button{
+    border:0;
+    border-radius:999px;
+    padding:7px 11px;
+    color:var(--muted);
+    background:transparent;
+    font-size:11px;
+    font-weight:800;
+}
+
+.mode-switch button.active{
+    color:#fff;
+    background:var(--green-2);
+    box-shadow:0 4px 12px rgba(25,102,85,.22);
+}
+
+.content{padding:22px 26px 30px}
+
+.eyebrow{
+    color:var(--green-2);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+
+.hero{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:18px;
+    margin-bottom:18px;
+}
+
+.hero h1{margin:6px 0 4px;font-size:25px;line-height:1.25}
+.hero p{margin:0;color:var(--muted);font-size:12px;line-height:1.7}
+
+.primary-button,
+.ghost-button{
+    border-radius:9px;
+    padding:10px 14px;
+    font-weight:900;
+    font-size:12px;
+}
+
+.primary-button{border:1px solid var(--green);color:#fff;background:var(--green)}
+.ghost-button{border:1px solid var(--line);color:var(--ink);background:#fff}
+
+.tag{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:5px 8px;
+    color:var(--muted);
+    background:#f7f9f8;
+    font-size:10px;
+    font-weight:800;
+}
+
+.tag.green{border-color:#abd7c7;color:#17604f;background:#effaf6}
+.tag.amber{border-color:#efd294;color:#8a5b10;background:var(--amber-bg)}
+.tag.red{border-color:#edb7b4;color:var(--red);background:var(--red-bg)}
+.tag.blue{border-color:#b9d4e4;color:var(--blue);background:#f0f7fb}
+
+.panel{
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:var(--paper);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+}
+
+.panel-title{
+    min-height:50px;
+    padding:12px 15px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    border-bottom:1px solid var(--line);
+}
+
+.panel-title strong{font-size:13px}
+.panel-title small{color:var(--muted);font-size:10px}
+
+/* Variant A: analyst desk */
+.variant-a{
+    display:grid;
+    grid-template-columns:275px minmax(420px,1fr) 310px;
+    gap:14px;
+    align-items:start;
+}
+
+.case-list{max-height:665px;overflow:auto}
+
+.case-button{
+    width:100%;
+    border:0;
+    border-bottom:1px solid #edf1ef;
+    padding:14px 15px;
+    text-align:left;
+    color:var(--ink);
+    background:#fff;
+}
+
+.case-button.active{
+    background:#edf7f3;
+    box-shadow:inset 3px 0 var(--green-2);
+}
+
+.case-button time{float:right;color:var(--muted);font-size:10px}
+.case-button b{display:block;margin:9px 0 5px;font-size:12px;line-height:1.55}
+.case-button small{color:var(--muted);font-size:10px}
+
+.analysis-body{padding:18px}
+
+.source-header{padding-bottom:16px;border-bottom:1px solid var(--line)}
+.source-header h2{margin:10px 0 8px;font-size:21px;line-height:1.4}
+.source-meta{display:flex;flex-wrap:wrap;gap:7px}
+
+.section-heading{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin:20px 0 10px;
+}
+
+.section-heading h3{margin:0;font-size:14px}
+.section-heading small{color:var(--muted);font-size:10px}
+
+.obligation{
+    display:grid;
+    grid-template-columns:34px minmax(0,1fr) 86px;
+    gap:11px;
+    align-items:start;
+    padding:12px 0;
+    border-top:1px solid #edf1ef;
+}
+
+.obligation:first-of-type{border-top:0}
+.number{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--green);background:var(--mint);font-size:10px;font-weight:900}
+.obligation b{display:block;margin-bottom:4px;font-size:12px}
+.obligation p{margin:0;color:var(--muted);font-size:11px;line-height:1.65}
+
+.evidence-body{padding:16px}
+
+.score-box{
+    padding:16px;
+    border-radius:12px;
+    background:linear-gradient(145deg,#12483d,#1d705e);
+    color:#fff;
+}
+
+.score-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.score-big{font-size:35px;font-weight:950;letter-spacing:-.04em}
+.score-box p{margin:10px 0 0;color:#cce4dc;font-size:10px;line-height:1.6}
+
+.claim{
+    margin-top:12px;
+    padding:12px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:#fbfcfc;
+}
+
+.claim-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.claim p{margin:8px 0;color:var(--ink);font-size:11px;line-height:1.6}
+.claim button{border:0;padding:0;color:var(--green-2);background:transparent;font-size:10px;font-weight:900}
+
+.meter{height:5px;border-radius:999px;background:#e8eeeb;overflow:hidden}
+.meter span{display:block;height:100%;border-radius:inherit;background:var(--green-2)}
+
+/* Variant B: agent pipeline */
+.variant-b{display:grid;gap:16px}
+
+.pipeline{
+    position:relative;
+    display:grid;
+    grid-template-columns:repeat(5,minmax(130px,1fr));
+    gap:18px;
+    padding:24px;
+    border:1px solid var(--line);
+    border-radius:16px;
+    background:#fff;
+    box-shadow:var(--shadow);
+}
+
+.pipeline::before{
+    content:"";
+    position:absolute;
+    left:9%;
+    right:9%;
+    top:61px;
+    height:2px;
+    background:#c9ddd6;
+}
+
+.stage{
+    position:relative;
+    z-index:1;
+    border:0;
+    padding:0;
+    text-align:center;
+    background:transparent;
+}
+
+.stage-circle{
+    width:74px;
+    height:74px;
+    margin:0 auto 10px;
+    border:5px solid #fff;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    color:var(--green);
+    background:#e6f2ed;
+    box-shadow:0 0 0 1px var(--line),0 6px 18px rgba(18,72,61,.10);
+    font-size:22px;
+}
+
+.stage.active .stage-circle{color:#fff;background:var(--green-2);box-shadow:0 0 0 3px #b8dfd2,0 8px 25px rgba(18,72,61,.22)}
+.stage.done .stage-circle::after{content:"✓";position:absolute;margin:50px 0 0 48px;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--green);font-size:10px}
+.stage b{display:block;font-size:12px}
+.stage small{display:block;margin-top:4px;color:var(--muted);font-size:9px;line-height:1.45}
+
+.pipeline-detail{
+    display:grid;
+    grid-template-columns:minmax(0,1.25fr) minmax(330px,.75fr);
+    gap:16px;
+}
+
+.trace-console{
+    min-height:390px;
+    padding:20px;
+    color:#d8ebe4;
+    background:#112f28;
+    border-radius:14px;
+    box-shadow:var(--shadow);
+}
+
+.console-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.console-head b{color:#fff;font-size:13px}
+.console-line{
+    display:grid;
+    grid-template-columns:68px 17px minmax(0,1fr);
+    gap:9px;
+    padding:8px 0;
+    font:11px/1.55 Consolas,monospace;
+    border-bottom:1px solid rgba(255,255,255,.07);
+}
+.console-time{color:#76ab9e}
+.console-dot{color:#55cfaa}
+.console-line.warn .console-dot{color:#ffd06f}
+
+.stage-inspector{padding:18px}
+.stage-inspector h2{margin:8px 0 6px;font-size:20px}
+.stage-inspector>p{margin:0;color:var(--muted);font-size:11px;line-height:1.7}
+.route-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.route-row:first-of-type{margin-top:16px}
+.route-row b{font-size:11px}
+.route-row small{display:block;margin-top:3px;color:var(--muted);font-size:9px}
+
+.privacy-route{
+    display:grid;
+    grid-template-columns:1fr 35px 1fr;
+    align-items:center;
+    gap:8px;
+    margin-top:16px;
+    padding:14px;
+    border-radius:11px;
+    background:#f1f7f4;
+    text-align:center;
+    font-size:10px;
+    font-weight:800;
+}
+.privacy-route span{font-size:18px;color:var(--green-2)}
+
+/* Variant C: case file */
+.variant-c{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 315px;
+    gap:20px;
+    align-items:start;
+}
+
+.case-file{
+    min-height:760px;
+    border:1px solid #d9dedb;
+    border-radius:4px;
+    background:#fff;
+    box-shadow:0 24px 60px rgba(37,48,43,.12);
+    overflow:hidden;
+}
+
+.file-cover{
+    display:grid;
+    grid-template-columns:8px minmax(0,1fr);
+    background:#fdfdfc;
+}
+.file-stripe{background:var(--green)}
+.file-head{padding:26px 32px 22px;border-bottom:1px solid var(--line)}
+.file-number{color:var(--muted);font:10px Consolas,monospace;letter-spacing:.08em}
+.file-head h1{max-width:760px;margin:12px 0 10px;font-size:26px;line-height:1.45}
+.file-head p{margin:0;color:var(--muted);font-size:11px;line-height:1.7}
+
+.file-body{padding:25px 32px 40px}
+.file-section{display:grid;grid-template-columns:150px minmax(0,1fr);gap:22px;padding:21px 0;border-bottom:1px solid var(--line)}
+.file-label{font-size:11px;font-weight:900;letter-spacing:.04em}
+.file-label span{display:block;margin-top:5px;color:var(--muted);font-size:9px;font-weight:500;letter-spacing:0}
+.file-content p{margin:0 0 10px;font-size:12px;line-height:1.85}
+
+.quote{
+    position:relative;
+    padding:14px 16px 14px 18px;
+    border-left:3px solid var(--green-2);
+    background:#f3f8f6;
+    color:#29463d;
+    font-size:11px;
+    line-height:1.8;
+}
+.quote mark{padding:1px 3px;background:#dff1e9;color:inherit}
+.citation{display:inline-block;margin-top:8px;color:var(--green-2);font-size:10px;font-weight:900}
+
+.action-rail{position:sticky;top:92px;display:grid;gap:13px}
+.trust-card{padding:19px;border-radius:14px;color:#fff;background:var(--green);box-shadow:var(--shadow)}
+.trust-card h2{margin:4px 0 0;font-size:34px}
+.trust-card p{margin:8px 0 0;color:#c7e0d8;font-size:10px;line-height:1.6}
+.checklist{padding:15px}
+.check-item{display:grid;grid-template-columns:22px minmax(0,1fr);gap:9px;padding:10px 0;border-bottom:1px solid var(--line)}
+.check-item:last-child{border-bottom:0}
+.check-icon{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--green-2);font-size:10px}
+.check-icon.warn{color:#8a5b10;background:#ffe5ad}
+.check-item b{display:block;font-size:11px}
+.check-item small{display:block;margin-top:3px;color:var(--muted);font-size:9px;line-height:1.5}
+.approval{padding:16px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow)}
+.approval h3{margin:0 0 6px;font-size:13px}
+.approval p{margin:0 0 13px;color:var(--muted);font-size:10px;line-height:1.6}
+.approval button{width:100%}
+.approval.approved{border-color:#8ac9b4;background:#f0faf6}
+
+.prototype-switcher{
+    position:fixed;
+    left:calc(50% + 40px);
+    bottom:20px;
+    z-index:100;
+    transform:translateX(-50%);
+    display:grid;
+    grid-template-columns:40px minmax(190px,auto) 40px;
+    align-items:center;
+    border:1px solid rgba(255,255,255,.22);
+    border-radius:999px;
+    padding:5px;
+    color:#fff;
+    background:#101c18;
+    box-shadow:0 16px 38px rgba(12,25,20,.28);
+}
+
+.prototype-switcher button{width:40px;height:40px;border:0;border-radius:50%;color:#fff;background:rgba(255,255,255,.09);font-size:18px}
+.prototype-switcher button:hover{background:rgba(255,255,255,.18)}
+.variant-name{text-align:center;padding:0 12px;font-size:11px;font-weight:900}
+.variant-name small{display:block;margin-top:2px;color:#a9bbb4;font-size:9px;font-weight:500}
+
+.toast{
+    position:fixed;
+    right:20px;
+    bottom:20px;
+    z-index:110;
+    max-width:320px;
+    border-radius:10px;
+    padding:11px 14px;
+    color:#fff;
+    background:#1c332b;
+    box-shadow:var(--shadow);
+    font-size:11px;
+    opacity:0;
+    pointer-events:none;
+    transform:translateY(8px);
+    transition:.2s ease;
+}
+.toast.show{opacity:1;transform:none}
+
+@media(max-width:1180px){
+    .variant-a{grid-template-columns:250px minmax(0,1fr)}
+    .variant-a>.evidence-panel{grid-column:1/-1}
+    .evidence-body{display:grid;grid-template-columns:240px repeat(3,1fr);gap:12px;align-items:start}
+    .claim{margin-top:0}
+}
+
+@media(max-width:850px){
+    .app-shell{grid-template-columns:68px minmax(0,1fr)}
+    .rail{width:68px;padding-inline:4px}
+    .rail-item{width:58px}
+    .topbar{padding-left:16px;padding-right:105px}
+    .content{padding:16px}
+    .mode-switch button{padding-inline:8px}
+    .variant-a,.variant-c,.pipeline-detail{grid-template-columns:1fr}
+    .pipeline{grid-template-columns:1fr;padding:16px}
+    .pipeline::before{display:none}
+    .stage{display:grid;grid-template-columns:50px minmax(0,1fr);text-align:left;align-items:center}
+    .stage-circle{width:44px;height:44px;margin:0;font-size:16px}
+    .stage small{margin:2px 0 0}
+    .evidence-body{display:block}.claim{margin-top:12px}
+    .action-rail{position:static}
+    .file-section{grid-template-columns:1fr;gap:8px}
+    .prototype-switcher{left:calc(50% + 34px)}
+}
+
+@media(max-width:600px){
+    .prototype-ribbon{top:auto;right:10px;bottom:76px;left:auto;transform:none}
+    .topbar{align-items:flex-start;flex-direction:column;padding-right:90px}
+    .hero{align-items:flex-start;flex-direction:column}
+    .variant-a{grid-template-columns:1fr}
+    .case-list{max-height:285px}
+    .file-head,.file-body{padding-inline:19px}
+}
+</style>
+</head>
+
+<body>
+<div class="prototype-ribbon">PROTOTYPE · 不寫入正式網站</div>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const variants = [
+    { key:'A', name:'證據工作台', note:'適合法遵分析人員' },
+    { key:'B', name:'Agent 流程鏈', note:'強調技術架構與可觀測性' },
+    { key:'C', name:'可信賴案件檔', note:'適合主管覆核與現場簡報' },
+];
+
+const cases = [
+    {
+        type:'法規異動',
+        date:'2026/09/17',
+        title:'保險業內部控制及稽核制度實施辦法修正',
+        source:'金融監督管理委員會',
+        confidence:94,
+    },
+    {
+        type:'監理新聞',
+        date:'2026/09/15',
+        title:'保險業啟動救災志工團體保險運作機制',
+        source:'金融監理新聞',
+        confidence:88,
+    },
+    {
+        type:'裁罰',
+        date:'2026/08/17',
+        title:'某銀行信用卡疑義帳款作業缺失處分案',
+        source:'金管會裁罰案例',
+        confidence:97,
+    },
+];
+
+const stages = [
+    { icon:'↓', title:'取得來源', subtitle:'官方法規／公告', status:'done' },
+    { icon:'≡', title:'義務抽取', subtitle:'Schema 結構化', status:'done' },
+    { icon:'⌕', title:'證據檢索', subtitle:'Hybrid RAG', status:'done' },
+    { icon:'✓', title:'AI 驗證', subtitle:'逐項核對引用', status:'active' },
+    { icon:'→', title:'行動派送', subtitle:'部門與完成日', status:'' },
+];
+
+let selectedVariant = new URLSearchParams(location.search).get('variant') || 'A';
+if(!variants.some(item => item.key === selectedVariant)) selectedVariant = 'A';
+let selectedMode = 'hybrid';
+let selectedCase = 0;
+let selectedStage = 3;
+let approved = false;
+
+function modeLabel(){
+    return selectedMode === 'local'
+        ? '本機隱私模式'
+        : selectedMode === 'deep'
+            ? '雲端深度驗證'
+            : '混合模式（建議）';
+}
+
+function topbar(title, subtitle){
+    return `
+        <header class="topbar">
+            <div class="topbar-title">
+                <strong>${title}</strong>
+                <small>${subtitle}</small>
+            </div>
+            <div class="mode-switch" aria-label="AI 模式">
+                <button data-mode="local" class="${selectedMode === 'local' ? 'active' : ''}">本機</button>
+                <button data-mode="hybrid" class="${selectedMode === 'hybrid' ? 'active' : ''}">混合</button>
+                <button data-mode="deep" class="${selectedMode === 'deep' ? 'active' : ''}">深度</button>
+            </div>
+        </header>
+    `;
+}
+
+function rail(){
+    return `
+        <aside class="rail">
+            <button class="hamburger" aria-label="選單">☰</button>
+            <button class="rail-item"><span class="rail-icon">⌂</span><span>情報</span></button>
+            <button class="rail-item active"><span class="rail-icon">✦</span><span>可信 AI</span></button>
+            <button class="rail-item"><span class="rail-icon">≡</span><span>任務</span></button>
+            <div class="rail-spacer"></div>
+            <button class="rail-item"><span class="rail-icon">⚙</span><span>設定</span></button>
+        </aside>
+    `;
+}
+
+function shell(content, title, subtitle){
+    return `
+        <div class="app-shell">
+            ${rail()}
+            <main class="main">
+                ${topbar(title, subtitle)}
+                ${content}
+            </main>
+        </div>
+        ${switcher()}
+    `;
+}
+
+function hero(kicker, title, text, action=''){
+    return `
+        <div class="hero">
+            <div>
+                <div class="eyebrow">${kicker}</div>
+                <h1>${title}</h1>
+                <p>${text}</p>
+            </div>
+            ${action}
+        </div>
+    `;
+}
+
+function caseButtons(){
+    return cases.map((item, index) => `
+        <button class="case-button ${selectedCase === index ? 'active' : ''}" data-case="${index}">
+            <span class="tag ${index === 2 ? 'red' : 'green'}">${item.type}</span>
+            <time>${item.date}</time>
+            <b>${item.title}</b>
+            <small>${item.source} · 證據信心 ${item.confidence}%</small>
+        </button>
+    `).join('');
+}
+
+function renderA(){
+    const item = cases[selectedCase];
+    const content = `
+        <div class="content">
+            ${hero(
+                'Variant A · Evidence Workbench',
+                '讓每一個 AI 判斷都能點回原文',
+                '三欄工作台同時顯示監理事件、結構化義務與驗證證據。',
+                '<button class="primary-button" data-run>\u91cd新執行分析</button>'
+            )}
+
+            <div class="variant-a">
+                <section class="panel">
+                    <div class="panel-title"><strong>監理事件</strong><small>120 筆</small></div>
+                    <div class="case-list">${caseButtons()}</div>
+                </section>
+
+                <section class="panel">
+                    <div class="analysis-body">
+                        <div class="source-header">
+                            <div class="source-meta">
+                                <span class="tag green">${item.type}</span>
+                                <span class="tag blue">${modeLabel()}</span>
+                                <span class="tag amber">待人工覆核</span>
+                            </div>
+                            <h2>${item.title}</h2>
+                            <div class="source-meta">
+                                <span class="tag">${item.date}</span>
+                                <span class="tag">官方來源已驗證</span>
+                                <span class="tag">資料分流：內部文件不上雲</span>
+                            </div>
+                        </div>
+
+                        <div class="section-heading">
+                            <h3>結構化監理義務</h3>
+                            <small>Schema v1.3 · 3 項</small>
+                        </div>
+
+                        <div class="obligation">
+                            <div class="number">01</div>
+                            <div><b>適用對象</b><p>保險業者及其內部控制、資訊安全與委外管理單位。</p></div>
+                            <span class="tag green">96% 可信</span>
+                        </div>
+                        <div class="obligation">
+                            <div class="number">02</div>
+                            <div><b>必須執行的行動</b><p>重新檢視內控作業、留存實施證據，並將資安風險納入定期覆核。</p></div>
+                            <span class="tag green">93% 可信</span>
+                        </div>
+                        <div class="obligation">
+                            <div class="number">03</div>
+                            <div><b>生效與完成時間</b><p>生效日 2026/11/01；建議內部盤點於 2026/10/15 前完成。</p></div>
+                            <span class="tag amber">89% 待核</span>
+                        </div>
+
+                        <div class="section-heading">
+                            <h3>建議派送的改善任務</h3>
+                            <small>由規則引擎＋AI 共同產生</small>
+                        </div>
+                        <div class="obligation">
+                            <div class="number">→</div>
+                            <div><b>法令遵循部／資訊安全部</b><p>完成內規差異盤點，上傳會議紀錄、修訂版 SOP 及測試紀錄作為查核證據。</p></div>
+                            <button class="ghost-button" data-toast="已建立示範任務">建立任務</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel evidence-panel">
+                    <div class="panel-title"><strong>AI 證據驗證</strong><small>Verifier</small></div>
+                    <div class="evidence-body">
+                        <div class="score-box">
+                            <div class="score-row"><div><small>整體證據分數</small><div class="score-big">${item.confidence}</div></div><span class="tag green">通過</span></div>
+                            <p>5/5 個核心主張可追溯到官方原文；1 個日期建議仍需人工確認。</p>
+                        </div>
+                        <div class="claim"><div class="claim-top"><b>主張 #1</b><span class="tag green">96%</span></div><p>保險業需重新檢視內控作業。</p><div class="meter"><span style="width:96%"></span></div><button data-toast="展開第 8 條第 1 項證據片段">查看第 8 條第 1 項 →</button></div>
+                        <div class="claim"><div class="claim-top"><b>主張 #2</b><span class="tag green">93%</span></div><p>資安風險應納入定期覆核。</p><div class="meter"><span style="width:93%"></span></div><button data-toast="展開第 12 條原文證據">查看第 12 條 →</button></div>
+                        <div class="claim"><div class="claim-top"><b>主張 #3</b><span class="tag amber">89%</span></div><p>建議內部盤點日期為 10/15。</p><div class="meter"><span style="width:89%;background:#d39a35"></span></div><button data-toast="此日期為 AI 反推建議，非法定期限">為何需覆核？→</button></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    `;
+    return shell(content, '可信賴監理 AI 實驗室', '證據對齊 · 結構化義務 · 人工覆核');
+}
+
+function renderB(){
+    const current = stages[selectedStage];
+    const content = `
+        <div class="content">
+            ${hero(
+                'Variant B · Agent Pipeline',
+                '把 AI 從黑箱變成可觀測的工作流',
+                '適合在簡報中展示 Agent 如何取得資料、調用工具、驗證結論並建立任務。',
+                '<button class="primary-button" data-run>\u57f7行完整 Agent 流程</button>'
+            )}
+
+            <div class="variant-b">
+                <section class="pipeline">
+                    ${stages.map((stage,index) => `
+                        <button class="stage ${stage.status} ${selectedStage === index ? 'active' : ''}" data-stage="${index}">
+                            <span class="stage-circle">${stage.icon}</span>
+                            <span><b>${stage.title}</b><small>${stage.subtitle}</small></span>
+                        </button>
+                    `).join('')}
+                </section>
+
+                <div class="pipeline-detail">
+                    <section class="trace-console">
+                        <div class="console-head"><b>Agent trace · run_20260918_014</b><span class="tag green">即時追蹤</span></div>
+                        <div class="console-line"><span class="console-time">00:00.0</span><span class="console-dot">●</span><span>source.fetch(「金管會法規異動」)</span></div>
+                        <div class="console-line"><span class="console-time">00:00.8</span><span class="console-dot">●</span><span>parser.extract(title, article, effective_date)</span></div>
+                        <div class="console-line"><span class="console-time">00:01.3</span><span class="console-dot">●</span><span>privacy.route(公開法規 → cloud-safe)</span></div>
+                        <div class="console-line"><span class="console-time">00:02.1</span><span class="console-dot">●</span><span>ollama.classify(risk, departments)</span></div>
+                        <div class="console-line"><span class="console-time">00:03.5</span><span class="console-dot">●</span><span>retriever.hybrid_search(k=8, rerank=3)</span></div>
+                        <div class="console-line"><span class="console-time">00:04.6</span><span class="console-dot">●</span><span>deep_model.extract_obligations(schema=v1.3)</span></div>
+                        <div class="console-line warn"><span class="console-time">00:06.4</span><span class="console-dot">●</span><span>verifier.flag(「10/15 為建議期限，非法定日期」)</span></div>
+                        <div class="console-line"><span class="console-time">00:07.0</span><span class="console-dot">●</span><span>task.draft(owner=Compliance, due=2026-10-15)</span></div>
+                    </section>
+
+                    <section class="panel">
+                        <div class="stage-inspector">
+                            <div class="eyebrow">目前節點 ${String(selectedStage + 1).padStart(2,'0')}</div>
+                            <h2>${current.title}</h2>
+                            <p>${selectedStage === 3 ? '驗證器逐項比對「AI 主張」與「法規證據片段」，不支持的結論會被阻擋，不會直接出現在最終報告。' : '點選上方任一節點，查看該階段的輸入、工具調用與產出。'}</p>
+                            <div class="route-row"><div><b>輸入</b><small>3 個法規片段＋1 個結構化草稿</small></div><span class="tag blue">JSON</span></div>
+                            <div class="route-row"><div><b>模型路由</b><small>${modeLabel()}</small></div><span class="tag green">可切換</span></div>
+                            <div class="route-row"><div><b>核心輸出</b><small>5 個主張通過，1 個待覆核</small></div><span class="tag amber">94/100</span></div>
+                            <div class="privacy-route"><div>內部 SOP<br><small>本機 Ollama</small></div><span>↔</span><div>公開法規<br><small>深度模型</small></div></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    `;
+    return shell(content, '監理 Agent 控制台', '工具調用 · 模型路由 · 全程追蹤');
+}
+
+function renderC(){
+    const content = `
+        <div class="content">
+            ${hero(
+                'Variant C · Verified Case File',
+                '一份能被主管、法遵與稽核共同閱讀的 AI 案件檔',
+                '弱化「聊天機器人」感，強調正式文件、證據、核准與查核軌跡。',
+                '<button class="ghost-button" data-toast="\u5df2產生示範管理摘要">\u7522生管理摘要</button>'
+            )}
+
+            <div class="variant-c">
+                <article class="case-file">
+                    <div class="file-cover">
+                        <div class="file-stripe"></div>
+                        <header class="file-head">
+                            <div class="file-number">CASE RI-2026-0917-008 · VERIFIED DRAFT</div>
+                            <h1>保險業內部控制及稽核制度實施辦法修正</h1>
+                            <p>來源：金融監督管理委員會 · 發布 2026/09/17 · 生效 2026/11/01 · ${modeLabel()}</p>
+                        </header>
+                    </div>
+
+                    <div class="file-body">
+                        <section class="file-section">
+                            <div class="file-label">01 · 管理摘要<span>Executive summary</span></div>
+                            <div class="file-content"><p>本次修正將資訊安全風險、委外管理與內控證據留存要求進一步明確化。AI 判斷法令遵循部、資訊安全部與內部稽核部需於生效日前完成現行流程盤點。</p><span class="tag green">5/5 主張有證據</span> <span class="tag amber">1 項建議日期待核</span></div>
+                        </section>
+
+                        <section class="file-section">
+                            <div class="file-label">02 · 原文證據<span>Claim-level citation</span></div>
+                            <div class="file-content">
+                                <div class="quote">「保險業應建立資訊安全防護機制，並就相關風險定期辦理評估及檢討……」<br><mark>支持主張：資安風險需納入定期覆核。</mark><br><span class="citation">第 12 條第 2 項 · 官方版本 →</span></div>
+                            </div>
+                        </section>
+
+                        <section class="file-section">
+                            <div class="file-label">03 · 企業影響<span>Business impact</span></div>
+                            <div class="file-content"><p><b>法令遵循部</b>：確認內部規章是否已包含修正後要求。<br><b>資訊安全部</b>：提供風險評估、測試紀錄及改善追蹤證據。<br><b>內部稽核部</b>：將新要求納入下一期稽核清單。</p></div>
+                        </section>
+
+                        <section class="file-section">
+                            <div class="file-label">04 · AI 限制<span>Known limitations</span></div>
+                            <div class="file-content"><p>2026/10/15 為 AI 依內部作業前置期反推的建議完成日，不是法規原文的法定期限。此日期需由負責人確認後才能派送任務。</p><span class="tag red">禁止自動略過人工核准</span></div>
+                        </section>
+                    </div>
+                </article>
+
+                <aside class="action-rail">
+                    <section class="trust-card"><small>可信賴分數</small><h2>94<small>/100</small></h2><p>引用完整度 100% · 義務抽取 92% · 日期確定性 89%</p></section>
+                    <section class="panel checklist">
+                        <div class="check-item"><span class="check-icon">✓</span><div><b>官方來源身分</b><small>網域、版本與發布時間已核對</small></div></div>
+                        <div class="check-item"><span class="check-icon">✓</span><div><b>主張引用對齊</b><small>5 項結論皆可回到原文</small></div></div>
+                        <div class="check-item"><span class="check-icon">✓</span><div><b>敏感資料分流</b><small>內部 SOP 僅在本機環境處理</small></div></div>
+                        <div class="check-item"><span class="check-icon warn">!</span><div><b>建議日期待覆核</b><small>需由法遵負責人確認</small></div></div>
+                    </section>
+                    <section class="approval ${approved ? 'approved' : ''}">
+                        <h3>${approved ? '已通過人工覆核' : '等待人工覆核'}</h3>
+                        <p>${approved ? '核准者：法令遵循部示範帳號' : '核准後才會建立部門任務與查核證據清單。'}</p>
+                        <button class="primary-button" data-approve>${approved ? '取消示範核准' : '核准並建立任務'}</button>
+                    </section>
+                </aside>
+            </div>
+        </div>
+    `;
+    return shell(content, '監理案件檔', '已驗證證據 · 人工覆核 · 完整稽核軌跡');
+}
+
+function switcher(){
+    const current = variants.find(item => item.key === selectedVariant);
+    return `
+        <div class="prototype-switcher" aria-label="Prototype 版本切換">
+            <button data-previous aria-label="上一個版本">←</button>
+            <div class="variant-name">${current.key} · ${current.name}<small>${current.note} · 可用 ← → 鍵</small></div>
+            <button data-next aria-label="下一個版本">→</button>
+        </div>
+    `;
+}
+
+function render(){
+    const html = selectedVariant === 'B' ? renderB() : selectedVariant === 'C' ? renderC() : renderA();
+    document.getElementById('app').innerHTML = html;
+    bind();
+}
+
+function setVariant(key){
+    selectedVariant = key;
+    const params = new URLSearchParams(location.search);
+    params.set('variant', key);
+    history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
+    render();
+    scrollTo({top:0,behavior:'smooth'});
+}
+
+function cycle(direction){
+    const index = variants.findIndex(item => item.key === selectedVariant);
+    const next = (index + direction + variants.length) % variants.length;
+    setVariant(variants[next].key);
+}
+
+function notify(message){
+    const element = document.getElementById('toast');
+    element.textContent = message;
+    element.classList.add('show');
+    clearTimeout(element.timer);
+    element.timer = setTimeout(() => element.classList.remove('show'), 2200);
+}
+
+function bind(){
+    document.querySelector('[data-previous]').onclick = () => cycle(-1);
+    document.querySelector('[data-next]').onclick = () => cycle(1);
+
+    document.querySelectorAll('[data-mode]').forEach(button => {
+        button.onclick = () => {
+            selectedMode = button.dataset.mode;
+            render();
+            notify(`已切換為${modeLabel()}`);
+        };
+    });
+
+    document.querySelectorAll('[data-case]').forEach(button => {
+        button.onclick = () => {
+            selectedCase = Number(button.dataset.case);
+            render();
+        };
+    });
+
+    document.querySelectorAll('[data-stage]').forEach(button => {
+        button.onclick = () => {
+            selectedStage = Number(button.dataset.stage);
+            render();
+        };
+    });
+
+    document.querySelectorAll('[data-toast]').forEach(button => {
+        button.onclick = () => notify(button.dataset.toast);
+    });
+
+    document.querySelectorAll('[data-run]').forEach(button => {
+        button.onclick = () => {
+            button.disabled = true;
+            button.textContent = '正在執行證據驗證…';
+            setTimeout(() => {
+                render();
+                notify('模擬分析完成：5 項通過，1 項需人工覆核');
+            }, 750);
+        };
+    });
+
+    const approval = document.querySelector('[data-approve]');
+    if(approval){
+        approval.onclick = () => {
+            approved = !approved;
+            render();
+            notify(approved ? '示範案件已核准，未寫入任何資料' : '已取消示範核准');
+        };
+    }
+}
+
+document.addEventListener('keydown', event => {
+    const target = event.target;
+    if(target.matches('input, textarea, [contenteditable="true"]')) return;
+    if(event.key === 'ArrowLeft') cycle(-1);
+    if(event.key === 'ArrowRight') cycle(1);
+});
+
+render();
+</script>
+</body>
+</html>

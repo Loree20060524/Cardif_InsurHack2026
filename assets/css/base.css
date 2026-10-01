@@ -1,6 +1,10 @@
 
 :root{
 
+    --sidebar-width:230px;
+
+    --sidebar-rail:82px;
+
     --bg:#f4f7f6;
 
     --panel:#fff;
@@ -84,11 +88,24 @@ button{
     display:grid;
 
     grid-template-columns:
-        230px 1fr;
+        var(--sidebar-rail)
+        minmax(0,1fr);
 }
 
 
 .sidebar{
+
+    position:fixed;
+
+    inset:
+        0 auto 0 0;
+
+    z-index:50;
+
+    width:
+        var(--sidebar-rail);
+
+    min-height:100vh;
 
     background:
         var(--brand-dark);
@@ -96,21 +113,144 @@ button{
     color:#fff;
 
     padding:
-        22px 18px;
+        14px 10px;
 
     display:flex;
 
     flex-direction:column;
 
     gap:24px;
+
+    overflow:hidden;
+
+    transition:
+        width .24s ease,
+        padding .24s ease,
+        box-shadow .24s ease;
+
+    will-change:width;
+}
+
+
+.sidebar.expanded{
+
+    width:
+        var(--sidebar-width);
+
+    padding:
+        14px 16px;
+
+    box-shadow:
+        18px 0 42px
+        rgba(18,62,53,.22);
+}
+
+
+.sidebar-head{
+
+    min-height:48px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+}
+
+
+.sidebar-toggle{
+
+    flex:
+        0 0 48px;
+
+    width:48px;
+
+    height:48px;
+
+    border:0;
+
+    border-radius:50%;
+
+    background:transparent;
+
+    color:#fff;
+
+    display:grid;
+
+    place-items:center;
+
+    padding:0;
+
+    transition:
+        background .18s ease;
+}
+
+
+.sidebar-toggle:hover,
+.sidebar-toggle:focus-visible{
+
+    background:
+        rgba(255,255,255,.12);
+}
+
+
+.sidebar-toggle:focus-visible{
+
+    outline:
+        2px solid #fff;
+
+    outline-offset:2px;
+}
+
+
+.sidebar-toggle svg{
+
+    width:23px;
+
+    height:23px;
+
+    fill:none;
+
+    stroke:currentColor;
+
+    stroke-width:2;
+
+    stroke-linecap:round;
 }
 
 
 .brand{
 
+    min-width:132px;
+
+    opacity:0;
+
+    visibility:hidden;
+
+    transform:
+        translateX(-8px);
+
+    white-space:nowrap;
+
+    transition:
+        opacity .16s ease,
+        transform .2s ease,
+        visibility .2s ease;
+
     font-size:20px;
 
     font-weight:900;
+}
+
+
+.sidebar.expanded .brand{
+
+    transform:
+        translateX(0);
+
+    opacity:1;
+
+    visibility:visible;
 }
 
 
@@ -132,7 +272,7 @@ button{
 
     display:grid;
 
-    gap:7px;
+    gap:6px;
 }
 
 
@@ -145,14 +285,32 @@ button{
 
     color:#d8e9e4;
 
-    text-align:left;
+    min-height:68px;
 
     padding:
-        11px 12px;
+        9px 4px;
 
-    border-radius:9px;
+    border-radius:11px;
 
     font-weight:800;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:6px;
+
+    text-align:center;
+
+    overflow:hidden;
+
+    transition:
+        background .18s ease,
+        color .18s ease;
 }
 
 
@@ -166,7 +324,105 @@ button{
 }
 
 
+.nav button:focus-visible{
+
+    outline:
+        2px solid #fff;
+
+    outline-offset:2px;
+}
+
+
+.nav-icon{
+
+    width:24px;
+
+    height:24px;
+
+    flex:
+        0 0 24px;
+
+    display:grid;
+
+    place-items:center;
+}
+
+
+.nav-icon svg{
+
+    width:24px;
+
+    height:24px;
+
+    fill:none;
+
+    stroke:currentColor;
+
+    stroke-width:1.9;
+
+    stroke-linecap:round;
+
+    stroke-linejoin:round;
+}
+
+
+.nav-label{
+
+    max-width:100%;
+
+    font-size:10px;
+
+    line-height:1.25;
+
+    white-space:nowrap;
+}
+
+
+.nav-label-full{
+    display:none;
+}
+
+
+.nav-label-short{
+    display:inline;
+}
+
+
+.sidebar.expanded .nav button{
+
+    min-height:46px;
+
+    padding:
+        10px 12px;
+
+    flex-direction:row;
+
+    justify-content:flex-start;
+
+    gap:13px;
+
+    text-align:left;
+}
+
+
+.sidebar.expanded .nav-label{
+    font-size:14px;
+}
+
+
+.sidebar.expanded .nav-label-full{
+    display:inline;
+}
+
+
+.sidebar.expanded .nav-label-short{
+    display:none;
+}
+
+
 .side-note{
+
+    display:none;
 
     margin-top:auto;
 
@@ -178,8 +434,26 @@ button{
 }
 
 
+.sidebar.expanded .side-note{
+    display:block;
+}
+
+
 .main{
+
+    grid-column:2;
+
     min-width:0;
+}
+
+
+@media(
+    prefers-reduced-motion:reduce
+){
+
+    .sidebar{
+        transition:none;
+    }
 }
 
 
@@ -222,6 +496,54 @@ button{
     margin:0;
 
     font-size:17px;
+}
+
+
+.topbar-heading{
+
+    min-width:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:3px;
+}
+
+
+.topbar .site-title{
+
+    color:var(--brand-dark);
+
+    font-size:20px;
+
+    line-height:1.15;
+
+    letter-spacing:-.02em;
+}
+
+
+.site-subtitle{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    color:var(--muted);
+
+    font-size:11px;
+
+    line-height:1.35;
+}
+
+
+.site-subtitle strong{
+
+    color:var(--brand);
+
+    font-weight:700;
 }
 
 
@@ -350,71 +672,4 @@ button{
     border-color:#edc4c4;
 
     color:var(--error);
-}
-
-
-/* =====================================================
-   Metrics
-===================================================== */
-
-.metrics{
-
-    display:grid;
-
-    grid-template-columns:
-        repeat(
-            4,
-            minmax(0,1fr)
-        );
-
-    gap:12px;
-
-    margin-bottom:16px;
-}
-
-
-.metric{
-
-    background:#fff;
-
-    border:
-        1px solid
-        var(--line);
-
-    border-radius:11px;
-
-    padding:
-        14px 16px;
-
-    box-shadow:
-        var(--shadow);
-}
-
-
-.metric span{
-
-    font-size:11px;
-
-    color:var(--muted);
-
-    font-weight:800;
-}
-
-
-.metric strong{
-
-    display:block;
-
-    font-size:25px;
-
-    margin:
-        8px 0 2px;
-}
-
-
-.metric small{
-
-    font-size:10px;
-
-    color:var(--muted);
 }

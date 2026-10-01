@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PROTOTYPE｜監理落地驗證室</title>
+<style>
+:root{
+  --bg:#f3f6f5;
+  --panel:#ffffff;
+  --ink:#172622;
+  --muted:#6c7b76;
+  --line:#dce6e2;
+  --brand:#174f43;
+  --brand-2:#24695a;
+  --soft:#eaf3f0;
+  --ok:#247454;
+  --ok-bg:#e9f6ef;
+  --warn:#9a6815;
+  --warn-bg:#fff6dc;
+  --bad:#a53e3e;
+  --bad-bg:#fff0ef;
+  --blue:#355d9b;
+  --blue-bg:#eef4ff;
+  --shadow:0 18px 45px rgba(25,58,50,.10);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","Microsoft JhengHei",Arial,sans-serif}
+button{font:inherit;cursor:pointer}
+.prototype-note{position:fixed;z-index:20;top:0;left:0;right:0;height:28px;background:#101d1a;color:#d7e7e2;display:flex;align-items:center;justify-content:center;gap:14px;font-size:11px;letter-spacing:.06em}
+.prototype-note b{color:#8ee0c5}
+.shell{display:grid;grid-template-columns:218px minmax(0,1fr);min-height:100vh;padding-top:28px}
+.sidebar{background:#123e35;color:white;padding:24px 17px;display:flex;flex-direction:column;gap:24px}
+.brand{font-size:20px;font-weight:900;line-height:1.2}.brand small{display:block;font-size:10px;opacity:.62;margin-top:5px;letter-spacing:.08em}
+.nav{display:grid;gap:7px}.nav-item{display:flex;align-items:center;gap:10px;color:#c9ddd7;padding:11px 12px;border-radius:9px;font-size:13px;font-weight:800}.nav-item.active{background:rgba(255,255,255,.13);color:#fff}.nav-icon{width:20px;text-align:center}
+.side-card{margin-top:auto;padding:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:12px;font-size:11px;line-height:1.7;color:#c4d8d2}.side-card b{color:#fff}
+.app{min-width:0}.topbar{height:74px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 26px}.title h1{font-size:18px;margin:0}.title p{font-size:11px;color:var(--muted);margin:5px 0 0}.top-actions{display:flex;align-items:center;gap:9px}.badge,.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800}.badge{background:var(--warn-bg);color:var(--warn)}.chip{background:var(--soft);color:var(--brand)}
+.main{padding:21px 24px 98px;max-width:1600px;margin:auto}.state-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;font-size:11px;color:var(--muted)}.state-line strong{color:var(--brand)}
+.variant{display:none}.variant.active{display:block}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 16px rgba(25,58,50,.04)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:15px 17px;border-bottom:1px solid var(--line)}.panel-head h2,.panel-head h3{font-size:14px;margin:0}.panel-body{padding:16px}
+.eyebrow{font-size:10px;letter-spacing:.1em;color:var(--brand-2);font-weight:900;text-transform:uppercase}.muted{color:var(--muted)}
+.btn{border:0;border-radius:9px;padding:9px 12px;background:var(--brand);color:white;font-weight:800;font-size:12px}.btn.secondary{background:white;color:var(--brand);border:1px solid #bbd0c9}.btn.ghost{background:var(--soft);color:var(--brand)}
+.status{display:inline-flex;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:900;white-space:nowrap}.status.ok{background:var(--ok-bg);color:var(--ok)}.status.partial{background:var(--warn-bg);color:var(--warn)}.status.missing{background:var(--bad-bg);color:var(--bad)}
+.confidence{height:7px;border-radius:99px;background:#e7eeeb;overflow:hidden}.confidence span{height:100%;display:block;background:var(--brand-2);border-radius:inherit}
+
+/* A: analyst cockpit */
+.cockpit{display:grid;grid-template-columns:245px minmax(420px,1fr) 285px;gap:14px;align-items:start}
+.case-name{font-size:15px;font-weight:900;line-height:1.45;margin:7px 0}.meta-list{display:grid;gap:10px;margin-top:15px}.meta-row{display:flex;justify-content:space-between;gap:10px;font-size:11px}.meta-row span:first-child{color:var(--muted)}.source-pill{margin-top:15px;padding:11px;background:var(--soft);border-radius:10px;font-size:11px;line-height:1.6}
+.steps{display:grid;gap:4px;margin-top:12px}.step{display:grid;grid-template-columns:24px 1fr;gap:8px;padding:8px;border-radius:9px;font-size:11px;color:var(--muted)}.step.active{background:var(--soft);color:var(--brand);font-weight:900}.step-num{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#dfeae6;font-size:10px}.step.active .step-num{background:var(--brand);color:white}
+.upload{border:1.5px dashed #9dbbb2;border-radius:11px;padding:13px;margin-top:14px;text-align:center;background:#fbfdfc}.upload strong{display:block;font-size:11px}.upload span{font-size:10px;color:var(--muted)}
+.diff-toolbar{display:flex;gap:7px}.diff-grid{display:grid;grid-template-columns:1fr 1fr}.diff-side{padding:17px;min-height:170px}.diff-side+ .diff-side{border-left:1px solid var(--line)}.diff-label{font-size:10px;font-weight:900;color:var(--muted);margin-bottom:10px}.clause{font-size:12px;line-height:1.85}.deleted{background:#ffe8e7;color:#874040;text-decoration:line-through;padding:1px 3px}.added{background:#def2e7;color:#1e674a;padding:1px 3px;font-weight:800}.obligation-list{display:grid;gap:8px}.obligation{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:start;padding:11px;border:1px solid var(--line);border-radius:10px}.obligation b{font-size:12px}.obligation p{font-size:10px;color:var(--muted);margin:4px 0 0;line-height:1.5}.ob-icon{width:25px;height:25px;border-radius:7px;background:var(--soft);display:grid;place-items:center;font-size:11px;color:var(--brand);font-weight:900}
+.score{display:flex;align-items:center;gap:13px}.score-ring{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--warn) 0 68%,#e8efed 68%);position:relative}.score-ring:after{content:"";position:absolute;inset:8px;border-radius:50%;background:#fff}.score-ring strong{z-index:1;font-size:19px}.score-copy b{font-size:12px}.score-copy p{font-size:10px;color:var(--muted);margin:5px 0}.counts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:15px}.count{padding:10px 5px;border-radius:9px;text-align:center}.count strong{display:block;font-size:18px}.count span{font-size:9px}.count.ok{background:var(--ok-bg);color:var(--ok)}.count.partial{background:var(--warn-bg);color:var(--warn)}.count.missing{background:var(--bad-bg);color:var(--bad)}
+.gap-list{display:grid;gap:8px;margin-top:13px}.gap-card{padding:10px;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:9px}.gap-card.bad{border-left-color:var(--bad)}.gap-card b{font-size:11px}.gap-card p{font-size:10px;color:var(--muted);margin:4px 0 0;line-height:1.5}
+
+/* B: guided journey */
+.journey{max-width:1080px;margin:auto}.hero{padding:22px 24px;background:linear-gradient(125deg,#123e35,#24695a);color:white;border-radius:16px;display:flex;align-items:center;justify-content:space-between;gap:20px;box-shadow:var(--shadow)}.hero h2{margin:5px 0 6px;font-size:22px}.hero p{margin:0;color:#cbe0da;font-size:12px;line-height:1.7}.hero-stat{text-align:right;min-width:170px}.hero-stat strong{font-size:28px}.hero-stat span{display:block;font-size:10px;color:#cbe0da}
+.journey-steps{display:grid;grid-template-columns:repeat(5,1fr);margin:18px 0;position:relative}.journey-steps:before{content:"";position:absolute;left:9%;right:9%;top:17px;height:2px;background:#cddbd6}.j-step{text-align:center;z-index:1}.j-dot{margin:auto;width:35px;height:35px;border-radius:50%;display:grid;place-items:center;background:#fff;border:2px solid #b9ccc6;color:var(--muted);font-size:11px;font-weight:900}.j-step.done .j-dot{background:var(--brand);color:white;border-color:var(--brand)}.j-step.active .j-dot{background:var(--warn-bg);color:var(--warn);border-color:#d9ae5e;box-shadow:0 0 0 5px rgba(217,174,94,.18)}.j-step span{display:block;font-size:10px;margin-top:7px;font-weight:800}
+.journey-card{display:grid;grid-template-columns:1.2fr .8fr;overflow:hidden}.journey-main{padding:24px}.journey-side{padding:24px;background:#f8fbfa;border-left:1px solid var(--line)}.journey-card h3{font-size:17px;margin:6px 0}.big-upload{margin:18px 0;border:2px dashed #9dbbb2;border-radius:14px;background:#f8fcfb;padding:22px;text-align:center}.file-icon{width:48px;height:48px;border-radius:12px;background:var(--soft);color:var(--brand);display:grid;place-items:center;margin:0 auto 9px;font-size:20px}.big-upload b{display:block;font-size:13px}.big-upload p{font-size:10px;color:var(--muted)}.file-ready{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:left;margin-top:12px}.file-ready strong{font-size:11px}.file-ready span{font-size:9px;color:var(--muted)}
+.preview-list{display:grid;gap:10px;margin-top:15px}.preview-item{display:grid;grid-template-columns:28px 1fr;gap:9px}.preview-item i{font-style:normal;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--brand);font-size:10px;font-weight:900}.preview-item b{font-size:11px}.preview-item p{font-size:10px;color:var(--muted);margin:3px 0;line-height:1.5}
+.journey-footer{display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-size:10px;color:var(--muted)}
+
+/* C: evidence matrix */
+.matrix-top{display:grid;grid-template-columns:1fr auto;gap:12px;margin-bottom:12px}.summary-strip{display:flex;align-items:center;gap:22px;padding:13px 16px}.summary-strip strong{font-size:17px}.summary-strip span{display:block;font-size:9px;color:var(--muted);margin-top:2px}.filter-bar{display:flex;gap:7px;align-items:center;padding:8px}.filter{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 9px;font-size:10px;color:var(--muted)}
+.matrix-wrap{overflow:hidden}.matrix{width:100%;border-collapse:collapse;font-size:11px}.matrix th{background:#f4f8f6;color:#52645e;text-align:left;padding:10px;border-bottom:1px solid var(--line);font-size:10px}.matrix td{padding:11px 10px;border-bottom:1px solid #e8eeec;vertical-align:top}.matrix tr.data-row{cursor:pointer}.matrix tr.data-row:hover,.matrix tr.data-row.selected{background:#f1f8f5}.req{font-weight:900;max-width:280px;line-height:1.45}.citation{color:var(--blue);background:var(--blue-bg);border-radius:6px;padding:3px 6px;font-size:9px;font-weight:800}.owner{font-weight:800;color:var(--brand)}
+.drawer{margin-top:12px;display:grid;grid-template-columns:1.15fr .85fr;overflow:hidden}.drawer-section{padding:17px}.drawer-section+ .drawer-section{border-left:1px solid var(--line);background:#fafcfb}.drawer h3{font-size:13px;margin:0 0 12px}.evidence-quote{border-left:3px solid var(--brand-2);padding:9px 11px;background:var(--soft);border-radius:0 8px 8px 0;font-size:11px;line-height:1.7}.reasoning{font-size:11px;line-height:1.7;color:#43534e}.action-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+
+.switcher{position:fixed;z-index:30;bottom:18px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:5px;padding:7px;background:#101d1a;border:1px solid rgba(255,255,255,.18);border-radius:999px;box-shadow:0 12px 34px rgba(0,0,0,.28);color:white}.switcher button{width:34px;height:34px;border:0;border-radius:50%;background:rgba(255,255,255,.1);color:white;font-size:17px}.variant-label{min-width:220px;text-align:center;font-size:11px;font-weight:900}.switcher small{display:block;font-size:8px;color:#9db6af;margin-top:2px;font-weight:500}
+body[data-current-variant="B"] .shell{grid-template-columns:1fr}
+body[data-current-variant="B"] .sidebar,body[data-current-variant="B"] .topbar{display:none}
+@media(max-width:1050px){.cockpit{grid-template-columns:220px 1fr}.cockpit>.right{grid-column:1/-1}.journey-card,.drawer{grid-template-columns:1fr}.journey-side,.drawer-section+ .drawer-section{border-left:0;border-top:1px solid var(--line)}}
+@media(max-width:760px){.shell{grid-template-columns:1fr}.sidebar{display:none}.main{padding:14px 12px 98px}.topbar{padding:0 14px}.cockpit{grid-template-columns:1fr}.diff-grid{grid-template-columns:1fr}.diff-side+.diff-side{border-left:0;border-top:1px solid var(--line)}.journey-steps{overflow:auto}.j-step{min-width:90px}.hero{align-items:flex-start}.hero-stat{min-width:auto}.matrix-top{grid-template-columns:1fr}.switcher{width:calc(100% - 24px)}.variant-label{min-width:0;flex:1}}
+</style>
+</head>
+<body>
+<div class="prototype-note"><b>THROWAWAY UI PROTOTYPE</b><span>只使用模擬資料・不會寫入正式系統</span><span id="stateNote"></span></div>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">RegIntel<small>監理情報中心</small></div>
+    <div class="nav">
+      <div class="nav-item"><span class="nav-icon">⌁</span>監理情報</div>
+      <div class="nav-item"><span class="nav-icon">▦</span>管理摘要</div>
+      <div class="nav-item active"><span class="nav-icon">✓</span>落地驗證室</div>
+      <div class="nav-item"><span class="nav-icon">◎</span>資料來源</div>
+    </div>
+    <div class="side-card"><b>本次驗證</b><br>監理要求 4 項<br>內規依據 3 處<br>待處理缺口 2 項</div>
+  </aside>
+  <section class="app">
+    <header class="topbar">
+      <div class="title"><h1>監理落地驗證室</h1><p>把法規要求轉換為可查證的內規缺口與改善行動</p></div>
+      <div class="top-actions"><span class="badge">● 模擬案例</span><span class="chip">最後分析 14:32</span><button class="btn secondary">匯出查核包</button></div>
+    </header>
+    <main class="main">
+      <div class="state-line"><strong>原型狀態</strong><span>事件：金融消費者權益保護作業修正</span><span>•</span><span id="sopState">SOP：客戶權益保障作業辦法_v3.pdf</span><span>•</span><span>分析：已完成</span></div>
+
+      <section class="variant" data-variant="A">
+        <div class="cockpit">
+          <div class="left">
+            <div class="panel">
+              <div class="panel-body">
+                <div class="eyebrow">Selected regulation</div>
+                <div class="case-name">金融消費者權益保護作業修正</div>
+                <span class="status partial">中度影響</span>
+                <div class="meta-list">
+                  <div class="meta-row"><span>主管機關</span><b>金融監督管理委員會</b></div>
+                  <div class="meta-row"><span>發布日期</span><b>2026/09/12</b></div>
+                  <div class="meta-row"><span>施行日期</span><b>2027/01/01</b></div>
+                  <div class="meta-row"><span>剩餘準備</span><b style="color:var(--bad)">106 天</b></div>
+                </div>
+                <div class="source-pill">原始來源已驗證<br><b>法規資料庫・第 12、18、24 條</b></div>
+                <div class="steps">
+                  <div class="step"><span class="step-num">1</span><span>辨識條文異動</span></div>
+                  <div class="step active"><span class="step-num">2</span><span>比對內規與 SOP</span></div>
+                  <div class="step"><span class="step-num">3</span><span>確認缺口證據</span></div>
+                  <div class="step"><span class="step-num">4</span><span>產生改善方案</span></div>
+                </div>
+                <div class="upload"><strong>✓ 已載入公司內規</strong><span class="sop-name">客戶權益保障作業辦法_v3.pdf</span><br><button class="btn ghost" data-upload style="margin-top:8px">更換文件</button></div>
+              </div>
+            </div>
+          </div>
+          <div class="center">
+            <div class="panel">
+              <div class="panel-head"><h2>新舊條文差異</h2><div class="diff-toolbar"><span class="chip">第 12 條</span><button class="btn ghost">查看原文 ↗</button></div></div>
+              <div class="diff-grid">
+                <div class="diff-side"><div class="diff-label">修正前</div><div class="clause">金融服務業應於客戶提出申訴後，於 <span class="deleted">四十五日內</span> 完成處理，並留存處理紀錄。</div></div>
+                <div class="diff-side"><div class="diff-label">修正後</div><div class="clause">金融服務業應於客戶提出申訴後，於 <span class="added">三十日內</span> 完成處理，並以 <span class="added">可稽核方式保存通知與改善紀錄五年</span>。</div></div>
+              </div>
+            </div>
+            <div class="panel" style="margin-top:14px">
+              <div class="panel-head"><h3>AI 拆解出的監理義務</h3><span class="chip">4 項要求</span></div>
+              <div class="panel-body obligation-list">
+                <div class="obligation"><span class="ob-icon">01</span><div><b>申訴案件須於 30 日內完成處理</b><p>來源：第 12 條第 1 項・屬於時限控制</p></div><span class="status partial">部分符合</span></div>
+                <div class="obligation"><span class="ob-icon">02</span><div><b>保存客戶通知與送達紀錄</b><p>來源：第 12 條第 2 項・屬於證據保存</p></div><span class="status missing">尚未涵蓋</span></div>
+                <div class="obligation"><span class="ob-icon">03</span><div><b>重大客訴須升級通報主管</b><p>來源：第 18 條・屬於事件通報</p></div><span class="status ok">已符合</span></div>
+                <div class="obligation"><span class="ob-icon">04</span><div><b>每季執行申訴根因分析</b><p>來源：第 24 條・屬於持續改善</p></div><span class="status ok">已符合</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="right">
+            <div class="panel">
+              <div class="panel-head"><h3>合規準備度</h3><span class="status partial">需改善</span></div>
+              <div class="panel-body">
+                <div class="score"><div class="score-ring"><strong>68</strong></div><div class="score-copy"><b>尚未達到上線條件</b><p>兩項缺口需於施行日前完成</p></div></div>
+                <div class="counts"><div class="count ok"><strong>2</strong><span>已符合</span></div><div class="count partial"><strong>1</strong><span>部分符合</span></div><div class="count missing"><strong>1</strong><span>未涵蓋</span></div></div>
+                <div class="gap-list"><div class="gap-card"><b>處理時限仍為 45 日</b><p>建議修改 SOP §4.2，並同步調整案件提醒門檻。</p></div><div class="gap-card bad"><b>缺少送達證據保存規範</b><p>建議新增保存格式、責任人與五年留存期限。</p></div></div>
+                <button class="btn" style="width:100%;margin-top:14px">檢視完整差距矩陣</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="variant" data-variant="B">
+        <div class="journey">
+          <div class="hero"><div><div class="eyebrow" style="color:#9dd9c7">Guided validation</div><h2>把一則監理變動，轉成可執行的改善方案</h2><p>系統會逐步確認法規義務、內部文件、差距證據與責任單位。</p></div><div class="hero-stat"><strong>3 / 5</strong><span>目前進度・約剩 2 分鐘</span></div></div>
+          <div class="journey-steps"><div class="j-step done"><div class="j-dot">✓</div><span>選擇法規</span></div><div class="j-step done"><div class="j-dot">✓</div><span>確認義務</span></div><div class="j-step active"><div class="j-dot">3</div><span>比對內規</span></div><div class="j-step"><div class="j-dot">4</div><span>覆核缺口</span></div><div class="j-step"><div class="j-dot">5</div><span>產生方案</span></div></div>
+          <div class="panel journey-card">
+            <div class="journey-main">
+              <div class="eyebrow">Step 3</div><h3>請確認要比對的公司內規或 SOP</h3><p class="muted" style="font-size:11px;line-height:1.7">AI 將逐項尋找對應控制、時限與證據保存規定。競賽原型使用模擬文件，不會上傳至外部服務。</p>
+              <div class="big-upload"><div class="file-icon">▤</div><b>拖曳 PDF、DOCX 或 TXT 至此</b><p>建議使用完整版本，以提高條文對應準確度</p><button class="btn" data-upload>選擇模擬文件</button><div class="file-ready"><div class="file-icon" style="width:34px;height:34px;margin:0;font-size:14px">PDF</div><div style="flex:1"><strong class="sop-name">客戶權益保障作業辦法_v3.pdf</strong><br><span>26 頁・已完成文字辨識・可信度 96%</span></div><span class="status ok">可分析</span></div></div>
+              <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn secondary">上一步</button><button class="btn">開始比對 4 項義務 →</button></div>
+            </div>
+            <aside class="journey-side">
+              <div class="eyebrow">接下來會發生什麼？</div><div class="preview-list">
+                <div class="preview-item"><i>1</i><div><b>尋找語意相近的內規段落</b><p>不只比對關鍵字，也判斷控制目的是否一致。</p></div></div>
+                <div class="preview-item"><i>2</i><div><b>檢查時限、責任人與保存證據</b><p>避免文字看似相關，但實際控制條件不足。</p></div></div>
+                <div class="preview-item"><i>3</i><div><b>保留每一項判斷的依據</b><p>法規原文、SOP 段落與 AI 信心程度均可覆核。</p></div></div>
+                <div class="preview-item"><i>4</i><div><b>產生管理層可讀的改善方案</b><p>包含責任部門、優先度及建議完成時間。</p></div></div>
+              </div>
+            </aside>
+          </div>
+          <div class="journey-footer"><span>資料只存在這次模擬工作階段</span><span>法規來源：金管會法規資料庫・已驗證</span></div>
+        </div>
+      </section>
+
+      <section class="variant" data-variant="C">
+        <div class="matrix-top">
+          <div class="panel summary-strip"><div><strong>4</strong><span>監理義務</span></div><div><strong style="color:var(--ok)">2</strong><span>已符合</span></div><div><strong style="color:var(--warn)">1</strong><span>部分符合</span></div><div><strong style="color:var(--bad)">1</strong><span>尚未涵蓋</span></div><div style="margin-left:auto"><span>整體證據覆蓋率</span><div class="confidence" style="width:150px;margin-top:7px"><span style="width:68%"></span></div></div></div>
+          <div class="panel filter-bar"><button class="filter">全部狀態⌄</button><button class="filter">責任部門⌄</button><button class="btn">＋加入覆核</button></div>
+        </div>
+        <div class="panel matrix-wrap">
+          <div class="panel-head"><h2>監理要求 × 內規控制差距矩陣</h2><div><span class="chip">法規版本 2026.09</span> <span class="chip">SOP v3</span></div></div>
+          <table class="matrix">
+            <thead><tr><th style="width:28%">監理要求</th><th>法規證據</th><th style="width:25%">內規對應</th><th>責任單位</th><th>判定</th><th>信心</th></tr></thead>
+            <tbody>
+              <tr class="data-row selected" data-gap="deadline"><td><div class="req">申訴案件須於 30 日內完成處理</div></td><td><span class="citation">第 12 條 §1</span></td><td>SOP §4.2：案件應於 45 日內完成</td><td><span class="owner">客戶服務部</span></td><td><span class="status partial">部分符合</span></td><td><b>97%</b><div class="confidence"><span style="width:97%"></span></div></td></tr>
+              <tr class="data-row" data-gap="evidence"><td><div class="req">保存客戶通知及送達紀錄五年</div></td><td><span class="citation">第 12 條 §2</span></td><td class="muted">未找到具體保存規範</td><td><span class="owner">營運管理部</span></td><td><span class="status missing">尚未涵蓋</span></td><td><b>91%</b><div class="confidence"><span style="width:91%"></span></div></td></tr>
+              <tr class="data-row" data-gap="escalation"><td><div class="req">重大客訴須升級通報主管</div></td><td><span class="citation">第 18 條</span></td><td>SOP §6.1：重大事件即時呈報部門主管</td><td><span class="owner">法令遵循部</span></td><td><span class="status ok">已符合</span></td><td><b>94%</b><div class="confidence"><span style="width:94%"></span></div></td></tr>
+              <tr class="data-row" data-gap="review"><td><div class="req">每季執行申訴根因分析</div></td><td><span class="citation">第 24 條</span></td><td>SOP §8.3：每季彙整申訴原因及改善追蹤</td><td><span class="owner">風險管理部</span></td><td><span class="status ok">已符合</span></td><td><b>89%</b><div class="confidence"><span style="width:89%"></span></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel drawer">
+          <div class="drawer-section"><div class="eyebrow">Selected gap</div><h3 id="drawerTitle">處理時限不一致</h3><div class="evidence-quote" id="drawerQuote">「金融服務業應於客戶提出申訴後三十日內完成處理。」— 修正條文第 12 條第 1 項</div><p class="reasoning" id="drawerReason">目前 SOP §4.2 規定為 45 日。雖然已建立申訴處理程序，但完成時限比新法規多 15 日，因此判定為「部分符合」。</p></div>
+          <div class="drawer-section"><h3>建議改善與查核證據</h3><div id="drawerAction" class="reasoning">① 將 SOP 時限改為 30 日<br>② 系統於第 20 日發出預警<br>③ 留存結案時間戳與通知紀錄<br>④ 由客戶服務部負責、法遵覆核</div><div class="action-row"><button class="btn">建立改善清單</button><button class="btn secondary">標記人工覆核</button><button class="btn ghost">查看完整推理</button></div></div>
+        </div>
+      </section>
+    </main>
+  </section>
+</div>
+<div class="switcher"><button id="prev" aria-label="上一個版本">←</button><div class="variant-label" id="variantLabel"></div><button id="next" aria-label="下一個版本">→</button></div>
+<script>
+// Three radically different UI variants of the Regulatory Impact Lab,
+// switchable through ?variant=A|B|C. Prototype only; no persistence.
+const variants = [
+  {key:'A', name:'分析師三欄工作台'},
+  {key:'B', name:'逐步導引流程'},
+  {key:'C', name:'證據差距矩陣'}
+];
+const gapDetails = {
+  deadline:{title:'處理時限不一致',quote:'「金融服務業應於客戶提出申訴後三十日內完成處理。」— 修正條文第 12 條第 1 項',reason:'目前 SOP §4.2 規定為 45 日。雖然已建立申訴處理程序，但完成時限比新法規多 15 日，因此判定為「部分符合」。',action:'① 將 SOP 時限改為 30 日<br>② 系統於第 20 日發出預警<br>③ 留存結案時間戳與通知紀錄<br>④ 由客戶服務部負責、法遵覆核'},
+  evidence:{title:'缺少送達證據保存規範',quote:'「應以可稽核方式保存通知與改善紀錄五年。」— 修正條文第 12 條第 2 項',reason:'現有文件只提到完成通知，沒有規定送達證據格式、保存位置、責任人或保存年限，因此判定為「尚未涵蓋」。',action:'① 新增送達證據清單<br>② 指定營運管理部為保管單位<br>③ 設定五年保存期限<br>④ 每季抽樣查核紀錄完整性'},
+  escalation:{title:'重大客訴升級機制已涵蓋',quote:'「重大消費爭議應建立適當之升級通報機制。」— 修正條文第 18 條',reason:'SOP §6.1 已要求重大事件即時呈報部門主管，控制目的與通報條件均一致，因此判定為「已符合」。',action:'維持現行控制；建議補充電子通報紀錄作為抽查證據。'},
+  review:{title:'季度根因分析已涵蓋',quote:'「金融服務業應定期分析申訴原因並追蹤改善情形。」— 修正條文第 24 條',reason:'SOP §8.3 已明定每季彙整申訴原因並追蹤改善，頻率與控制目的皆符合要求。',action:'維持現行控制；管理摘要可直接引用季度分析結果。'}
+};
+let current = new URLSearchParams(location.search).get('variant') || 'A';
+if (!variants.some(item => item.key === current)) current = 'A';
+function renderVariant(){
+  document.body.dataset.currentVariant = current;
+  document.querySelectorAll('.variant').forEach(node => node.classList.toggle('active', node.dataset.variant === current));
+  const meta = variants.find(item => item.key === current);
+  document.getElementById('variantLabel').innerHTML = `${meta.key}・${meta.name}<small>← → 可切換版型</small>`;
+  document.getElementById('stateNote').textContent = `VARIANT ${meta.key}`;
+  const url = new URL(location.href); url.searchParams.set('variant', current); history.replaceState({},'',url);
+}
+function cycle(delta){const index=variants.findIndex(item=>item.key===current);current=variants[(index+delta+variants.length)%variants.length].key;renderVariant()}
+document.getElementById('prev').onclick=()=>cycle(-1);document.getElementById('next').onclick=()=>cycle(1);
+document.addEventListener('keydown',event=>{if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)||document.activeElement.isContentEditable)return;if(event.key==='ArrowLeft')cycle(-1);if(event.key==='ArrowRight')cycle(1)});
+document.querySelectorAll('[data-upload]').forEach(button=>button.onclick=()=>{document.querySelectorAll('.sop-name').forEach(node=>node.textContent='客戶權益保障作業辦法_v4_模擬版.pdf');document.getElementById('sopState').textContent='SOP：客戶權益保障作業辦法_v4_模擬版.pdf';button.textContent='✓ 已載入模擬文件'});
+document.querySelectorAll('.data-row').forEach(row=>row.onclick=()=>{document.querySelectorAll('.data-row').forEach(item=>item.classList.remove('selected'));row.classList.add('selected');const data=gapDetails[row.dataset.gap];document.getElementById('drawerTitle').textContent=data.title;document.getElementById('drawerQuote').textContent=data.quote;document.getElementById('drawerReason').textContent=data.reason;document.getElementById('drawerAction').innerHTML=data.action});
+renderVariant();
+</script>
+</body>
+</html>

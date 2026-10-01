@@ -5,10 +5,14 @@ from __future__ import annotations
 from typing import Any
 
 from .rules import (
+    CROSS_FINANCE_SCOPE_KEYWORDS,
     CROSS_FINANCE_KEYWORDS,
     DEPARTMENT_RULES,
+    INSURANCE_ENTERPRISE_KEYWORDS,
     INSURANCE_KEYWORDS,
+    NON_REGULATORY_NEWS_PATTERNS,
     PROCESS_RULES,
+    REGULATORY_SIGNAL_KEYWORDS,
 )
 from .text import clean_text, contains_any
 
@@ -28,7 +32,6 @@ def is_relevant(
         "source_key",
         ""
     )
-
 
     # 保險局法規直接保留
     if (
@@ -62,6 +65,34 @@ def is_relevant(
             CROSS_FINANCE_KEYWORDS
         )
     )
+
+
+def is_management_signal(
+    event: dict[str, Any]
+) -> bool:
+    """Keep news only when it carries an enterprise regulatory signal."""
+
+    if event.get("source_key", "") != "reg_news":
+        return True
+
+    title = clean_text(event.get("title", "")).lower()
+
+    if contains_any(title, NON_REGULATORY_NEWS_PATTERNS):
+        return False
+
+    has_enterprise_domain = (
+        contains_any(title, INSURANCE_ENTERPRISE_KEYWORDS)
+        or (
+            contains_any(title, CROSS_FINANCE_KEYWORDS)
+            and contains_any(title, CROSS_FINANCE_SCOPE_KEYWORDS)
+        )
+    )
+    has_regulatory_signal = contains_any(
+        title,
+        REGULATORY_SIGNAL_KEYWORDS,
+    )
+
+    return has_enterprise_domain and has_regulatory_signal
 
 
 # =========================================================
@@ -168,13 +199,40 @@ def detect_departments(
     )
 
 
-    return [
+    output: list[
+        dict[
+            str,
+            str
+        ]
+    ] = []
 
-        item[2]
+    seen_departments: set[str] = set()
 
-        for item
-        in matches[:5]
-    ]
+    for item in matches:
+
+        match = item[2]
+
+        department = match[
+            "department"
+        ]
+
+        if department in seen_departments:
+
+            continue
+
+        seen_departments.add(
+            department
+        )
+
+        output.append(
+            match
+        )
+
+        if len(output) >= 5:
+
+            break
+
+    return output
 
 
 # =========================================================
@@ -218,7 +276,7 @@ def detect_processes(
 
         else
 
-        "法令遵循部"
+        "法令遵循"
     )
 
 

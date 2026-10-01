@@ -13,9 +13,21 @@ const state = {
 
     selected:null,
 
+    sourceTypeFilter:'全部',
+
     query:'',
 
-    filter:'all',
+    filters:{
+        types:new Set(),
+        departments:new Set(),
+    },
+
+    filterDraft:{
+        types:new Set(),
+        departments:new Set(),
+    },
+
+    advancedFilterOpen:false,
 
     view:'intel',
 
@@ -34,6 +46,9 @@ const state = {
         new Set(),
 
     aiRequested:
+        new Set(),
+
+    aiFailed:
         new Set(),
 };
 
@@ -75,92 +90,173 @@ const esc =
 const departmentNameMap = {
 
     Compliance:
-        '法令遵循部',
+        '法令遵循',
+
+    '法令遵循部':
+        '法令遵循',
 
     Legal:
-        '法務部',
+        '法務',
+
+    '法務部':
+        '法務',
 
     Risk:
-        '風險管理部',
+        '風險管理',
+
+    '風險管理部':
+        '風險管理',
 
     Audit:
-        '內部稽核部',
+        '內部稽核',
+
+    '內部稽核部':
+        '內部稽核',
 
     Sales:
-        '業務通路管理部',
-
-    Operations:
-        '保單行政／營運管理部',
-
-    IT:
-        '資訊科技部',
-
-    'Information Technology':
-        '資訊科技部',
-
-    'Information Security':
-        '資訊安全部',
-
-    'Cyber Security':
-        '資訊安全部',
-
-    Product:
-        '商品發展部',
-
-    'Product Development':
-        '商品發展部',
+        '業務通路／行銷',
 
     Marketing:
-        '行銷企劃部',
+        '業務通路／行銷',
 
-    Training:
-        '人力資源部',
+    '業務通路管理部':
+        '業務通路／行銷',
 
-    'Human Resources':
-        '人力資源部',
+    '行銷企劃部':
+        '業務通路／行銷',
 
-    HR:
-        '人力資源部',
+    Operations:
+        '核保／新契約／保單營運',
 
-    Claims:
-        '理賠部',
+    Underwriting:
+        '核保／新契約／保單營運',
 
-    Claim:
-        '理賠部',
+    'New Business':
+        '核保／新契約／保單營運',
 
-    'Customer Service':
-        '客戶服務部',
+    'Policy Administration':
+        '核保／新契約／保單營運',
 
-    'Customer Services':
-        '客戶服務部',
+    '保單行政／營運管理部':
+        '核保／新契約／保單營運',
 
-    Actuarial:
-        '精算部',
+    IT:
+        '資訊科技',
 
-    Finance:
-        '財務部',
+    'Information Technology':
+        '資訊科技',
 
-    Accounting:
-        '財務部',
+    '資訊科技部':
+        '資訊科技',
 
-    Investment:
-        '投資管理部',
+    'Information Security':
+        '資訊安全／個資治理',
 
-    Investments:
-        '投資管理部',
+    'Cyber Security':
+        '資訊安全／個資治理',
 
     'Data Governance':
-        '個資／資料治理單位',
+        '資訊安全／個資治理',
 
     Privacy:
-        '個資／資料治理單位',
+        '資訊安全／個資治理',
+
+    '資訊安全部':
+        '資訊安全／個資治理',
+
+    '個資／資料治理單位':
+        '資訊安全／個資治理',
+
+    Product:
+        '商品／精算',
+
+    'Product Development':
+        '商品／精算',
+
+    Actuarial:
+        '商品／精算',
+
+    '商品發展部':
+        '商品／精算',
+
+    '精算部':
+        '商品／精算',
+
+    Training:
+        '人力資源',
+
+    'Human Resources':
+        '人力資源',
+
+    HR:
+        '人力資源',
+
+    '人力資源部':
+        '人力資源',
+
+    Claims:
+        '理賠',
+
+    Claim:
+        '理賠',
+
+    '理賠部':
+        '理賠',
+
+    'Customer Service':
+        '客戶服務／申訴',
+
+    'Customer Services':
+        '客戶服務／申訴',
+
+    '客戶服務部':
+        '客戶服務／申訴',
+
+    Finance:
+        '財務／會計',
+
+    Accounting:
+        '財務／會計',
+
+    '財務部':
+        '財務／會計',
+
+    Investment:
+        '投資／資產負債管理',
+
+    Investments:
+        '投資／資產負債管理',
+
+    '投資管理部':
+        '投資／資產負債管理',
 
     Outsourcing:
-        '採購／委外管理單位',
+        '風險管理',
 
     Procurement:
-        '採購／委外管理單位',
+        '風險管理',
+
+    '採購／委外管理單位':
+        '風險管理',
 };
+
+
+const RESPONSIBLE_DEPARTMENT_OPTIONS = [
+    '法令遵循',
+    '法務',
+    '風險管理',
+    '內部稽核',
+    '商品／精算',
+    '業務通路／行銷',
+    '核保／新契約／保單營運',
+    '客戶服務／申訴',
+    '理賠',
+    '財務／會計',
+    '投資／資產負債管理',
+    '資訊科技',
+    '資訊安全／個資治理',
+    '人力資源',
+];
 
 
 function departmentLabel(
@@ -298,18 +394,6 @@ function sourceTone(
 }
 
 
-function workflowStatus(
-    event
-){
-
-    return (
-        event.workflow_status
-        ||
-        '待確認'
-    );
-}
-
-
 /* =====================================================
    Dates
 ===================================================== */
@@ -356,6 +440,38 @@ function formatDate(
     ).format(
         date
     );
+}
+
+
+function formatEventDate(
+    event
+){
+
+    if(
+        event?.published_at
+    ){
+
+        return formatDate(
+            event.published_at
+        );
+    }
+
+
+    if(
+        event?.detected_at
+    ){
+
+        return (
+            '偵測 '
+            +
+            formatDate(
+                event.detected_at
+            )
+        );
+    }
+
+
+    return '日期未提供';
 }
 
 
@@ -410,6 +526,51 @@ function formatDateTime(
    Filters
 ===================================================== */
 
+const EVENT_TYPE_FILTER_OPTIONS = [
+    '裁罰',
+    '法規',
+    '公告',
+    '監理新聞',
+];
+
+
+function copyAdvancedFilters(
+    filters
+){
+
+    return {
+        types:
+            new Set(
+                filters.types
+            ),
+
+        departments:
+            new Set(
+                filters.departments
+            ),
+    };
+}
+
+
+function advancedFilterCount(
+    filters=state.filters
+){
+
+    return (
+        filters.types.size
+        +
+        filters.departments.size
+    );
+}
+
+
+function responsibleDepartmentOptions(){
+
+    return [
+        ...RESPONSIBLE_DEPARTMENT_OPTIONS
+    ];
+}
+
 function filteredEvents(){
 
     const query =
@@ -430,70 +591,36 @@ function filteredEvents(){
                 );
 
 
-            const filterOk =
-
-                state.filter
-                ===
-                'all'
-
+            const typeOk =
+                !state.filters.types.size
                 ||
-
-                (
-                    state.filter
-                    ===
-                    'penalty'
-
-                    &&
-
+                state.filters.types.has(
                     type
-                    ===
-                    '裁罰'
-                )
-
-                ||
-
-                (
-                    state.filter
-                    ===
-                    'law'
-
-                    &&
-
-                    type
-                    ===
-                    '法規'
-                )
-
-                ||
-
-                (
-                    state.filter
-                    ===
-                    'announcement'
-
-                    &&
-
-                    type
-                    ===
-                    '公告'
-                )
-
-                ||
-
-                (
-                    state.filter
-                    ===
-                    'news'
-
-                    &&
-
-                    type
-                    ===
-                    '監理新聞'
                 );
 
 
-            if(!filterOk){
+            if(!typeOk){
+
+                return false;
+            }
+
+
+            const responsibleDepartment =
+                departmentLabel(
+                    event.analysis
+                    ?.responsible_department
+                );
+
+
+            const departmentOk =
+                !state.filters.departments.size
+                ||
+                state.filters.departments.has(
+                    responsibleDepartment
+                );
+
+
+            if(!departmentOk){
 
                 return false;
             }

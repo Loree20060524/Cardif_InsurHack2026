@@ -10,6 +10,7 @@ from ..domain.rules import AI_ALLOWED_DEPARTMENTS
 from ..domain.schemas import AI_ANALYSIS_SCHEMA
 from ..domain.text import clean_text
 from ..infrastructure.json_store import atomic_write_json
+from ..infrastructure.attachment_text import fetch_event_attachment_text
 from ..infrastructure.ollama import call_ollama_structured_json
 from .ai_support import (
     ai_event_cache_key,
@@ -66,7 +67,9 @@ def analyze_event_with_ai(
         if isinstance(
             cached,
             dict
-        ):
+        ) and cached.get(
+            "analysis_mode"
+        ) == "AI 深度分析":
 
             return cached
 
@@ -78,6 +81,37 @@ def analyze_event_with_ai(
                 ""
             )
         )
+
+
+        content_source = "官方摘要"
+
+
+        if not description:
+
+            description = clean_text(
+                fetch_event_attachment_text(
+                    event
+                )
+            )
+
+
+            if description:
+
+                content_source = "官方附件內容"
+
+
+        if not description:
+
+            fallback[
+                "analysis_note"
+            ] = (
+                "目前官方來源未提供可解析的"
+                "摘要或附件內容，已顯示規則備援；"
+                "取得官方原文後才能進行深度分析。"
+            )
+
+
+            return fallback
 
 
         if (
@@ -146,11 +180,6 @@ def analyze_event_with_ai(
             "但不要建立任務狀態、完成率、"
             "執行追蹤、逾期管理或責任人派送。"
 
-            "handling_deadline 若官方來源"
-            "未提供法定期限，請寫『待確認』；"
-            "不得把公司內部建議時程"
-            "描述成法定期限。"
-
             "全部輸出繁體中文，內容要簡潔、"
             "專業、可供企業初步研判。"
         )
@@ -176,13 +205,13 @@ def analyze_event_with_ai(
             f"系統偵測異動："
             f"{event.get('change_status', '無')}\n"
 
-            f"官方內容：\n"
-            f"{description or '官方摘要未提供'}"
+            f"{content_source}：\n"
+            f"{description}"
 
             "\n\n"
 
             "請完成：監理重點摘要、事件性質、"
-            "風險程度、重要性、建議處理時程、"
+            "風險程度、重要性、"
             "主要責任部門、受影響部門與理由、"
             "可能受影響流程、風險提醒與注意事項、"
             "改善建議與因應措施，"
@@ -213,19 +242,27 @@ def analyze_event_with_ai(
         )
 
 
-        cache[
-            "analyses"
-        ][
-            cache_key
-        ] = analysis
+        if analysis.get(
+            "analysis_mode"
+        ) == "AI 深度分析":
+
+            cache[
+                "analyses"
+            ][
+                cache_key
+            ] = analysis
 
 
         try:
 
-            atomic_write_json(
-                AI_CACHE_FILE,
-                cache
-            )
+            if analysis.get(
+                "analysis_mode"
+            ) == "AI 深度分析":
+
+                atomic_write_json(
+                    AI_CACHE_FILE,
+                    cache
+                )
 
         except Exception:
 

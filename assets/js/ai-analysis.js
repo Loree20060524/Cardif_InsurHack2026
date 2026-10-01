@@ -2,6 +2,44 @@
    AI Analysis
 ===================================================== */
 
+function notifyAIAnalysisState(
+    event,
+    status
+){
+
+    if(
+        typeof document
+        ===
+        'undefined'
+        ||
+        typeof CustomEvent
+        ===
+        'undefined'
+    ){
+
+        return;
+    }
+
+
+    document.dispatchEvent(
+
+        new CustomEvent(
+
+            'regintel:ai-analysis-state',
+
+            {
+
+                detail:{
+
+                    eventId:event?.id,
+
+                    status,
+                },
+            }
+        )
+    );
+}
+
 async function ensureAIAnalysis(
     event
 ){
@@ -45,10 +83,22 @@ async function ensureAIAnalysis(
         event.id
     );
 
+    state.aiFailed.delete(event.id);
+
 
     state.aiLoading.add(
         event.id
     );
+
+
+    notifyAIAnalysisState(
+        event,
+        'loading'
+    );
+
+
+    let analysisStatus =
+        'failed';
 
 
     if(
@@ -133,6 +183,30 @@ async function ensureAIAnalysis(
 
 
         if(
+            event.analysis
+            ?.analysis_mode
+            ===
+            'AI 深度分析'
+        ){
+
+            analysisStatus =
+                'complete';
+
+            state.aiFailed.delete(event.id);
+        }
+
+        else{
+
+            /* Allow an explicit retry when the model returned only fallback data. */
+            state.aiRequested.delete(
+                event.id
+            );
+
+            state.aiFailed.add(event.id);
+        }
+
+
+        if(
             event.id
             ===
             state.selected
@@ -150,6 +224,12 @@ async function ensureAIAnalysis(
 
     catch(error){
 
+        state.aiRequested.delete(
+            event.id
+        );
+
+        state.aiFailed.add(event.id);
+
         console.error(
             error
         );
@@ -165,5 +245,15 @@ async function ensureAIAnalysis(
         state.aiLoading.delete(
             event.id
         );
+
+
+        notifyAIAnalysisState(
+            event,
+            analysisStatus
+        );
+
+        if(event.id === state.selected){
+            renderDetail(false);
+        }
     }
 }

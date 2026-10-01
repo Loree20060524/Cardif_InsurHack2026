@@ -211,10 +211,6 @@ def detect_law_changes(
                 "detected_at"
             ] = detected_at
 
-            changed[
-                "workflow_status"
-            ] = "待確認"
-
             changes.append(
                 changed
             )

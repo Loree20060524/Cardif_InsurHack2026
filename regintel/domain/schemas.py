@@ -72,12 +72,6 @@ AI_ANALYSIS_SCHEMA = {
         },
 
 
-        "handling_deadline": {
-            "type":
-                "string"
-        },
-
-
         "responsible_department": {
             "type":
                 "string"
@@ -208,7 +202,6 @@ AI_ANALYSIS_SCHEMA = {
         "event_nature",
         "risk_level",
         "importance",
-        "handling_deadline",
         "responsible_department",
         "regulatory_points",
         "departments",

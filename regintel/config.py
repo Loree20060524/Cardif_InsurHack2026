@@ -142,7 +142,7 @@ AI_MAX_INPUT_CHARS = int(
 
 
 AI_PROMPT_VERSION = (
-    "regintel-v10.6-risk-insight"
+    "regintel-v10.8-competition-departments"
 )
 
 

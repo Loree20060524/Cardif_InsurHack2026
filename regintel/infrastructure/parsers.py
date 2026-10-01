@@ -13,6 +13,9 @@ from ..domain.text import clean_text, decode_bytes, local_tag, parse_date
 from ..source_catalog import SOURCES
 
 
+SOURCE_PARSER_VERSION = "regintel-source-parser-v2-law-parent-dates"
+
+
 # =========================================================
 # Event normalization
 # =========================================================
@@ -134,8 +137,6 @@ def normalize_event(
                 category
             ),
 
-        "workflow_status":
-            "待確認",
     }
 
 
@@ -317,6 +318,98 @@ def parse_law_xml(
     ] = []
 
 
+    parent_map = {
+
+        child:
+            parent
+
+        for parent
+        in root.iter()
+
+        for child
+        in parent
+    }
+
+
+    record_cache: dict[
+        ET.Element,
+        dict[str, str]
+    ] = {}
+
+
+    def node_record(
+        node: ET.Element
+    ) -> dict[str, str]:
+
+        cached = record_cache.get(
+            node
+        )
+
+
+        if cached is not None:
+
+            return cached
+
+
+        record: dict[str, str] = {}
+
+
+        for child in list(
+            node
+        ):
+
+            value = clean_text(
+                " ".join(
+                    child.itertext()
+                )
+            )
+
+
+            if value:
+
+                record[
+                    local_tag(
+                        child.tag
+                    )
+                ] = value
+
+
+        record_cache[
+            node
+        ] = record
+
+
+        return record
+
+
+    def parent_law_record(
+        node: ET.Element
+    ) -> dict[str, str]:
+
+        parent = parent_map.get(
+            node
+        )
+
+
+        while parent is not None:
+
+            if local_tag(
+                parent.tag
+            ) == "Law":
+
+                return node_record(
+                    parent
+                )
+
+
+            parent = parent_map.get(
+                parent
+            )
+
+
+        return {}
+
+
     for node in root.iter():
 
         children = list(
@@ -337,27 +430,14 @@ def parse_law_xml(
             continue
 
 
-        record: dict[
-            str,
-            str
-        ] = {}
+        record = node_record(
+            node
+        )
 
 
-        for child in children:
-
-            value = clean_text(
-                " ".join(
-                    child.itertext()
-                )
-            )
-
-            if value:
-
-                record[
-                    local_tag(
-                        child.tag
-                    )
-                ] = value
+        inherited = parent_law_record(
+            node
+        )
 
 
         title = find_value(
@@ -391,6 +471,23 @@ def parse_law_xml(
                 "pubDate",
             ]
         )
+
+
+        if not date:
+
+            date = find_value(
+
+                inherited,
+
+                [
+                    "系統異動時間",
+                    "修正日期",
+                    "公發布日",
+                    "發布日期",
+                    "生效日期",
+                    "pubDate",
+                ]
+            )
 
 
         description = find_value(
@@ -432,6 +529,20 @@ def parse_law_xml(
                 "category",
             ]
         )
+
+
+        if not category:
+
+            category = find_value(
+
+                inherited,
+
+                [
+                    "法規類別",
+                    "法規體系",
+                    "category",
+                ]
+            )
 
 
         output.append(

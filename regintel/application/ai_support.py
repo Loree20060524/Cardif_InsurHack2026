@@ -22,6 +22,46 @@ from ..infrastructure.json_store import load_json_file
 _ai_lock = threading.Lock()
 
 
+_PENDING_TEXTS = {
+    "待確認",
+    "無法確認",
+    "資料不足",
+    "資料不足，待確認",
+    "官方摘要未提供",
+}
+
+
+def is_meaningful_ai_text(value: Any) -> bool:
+    text = clean_text(value if isinstance(value, str) else "")
+    normalized = text.rstrip("。．.!！")
+    return bool(text and normalized not in _PENDING_TEXTS)
+
+
+def has_substantive_ai_analysis(result: dict[str, Any]) -> bool:
+    """Reject placeholder-only model output as a deep analysis."""
+    narrative_signals = 0
+
+    for name in ("summary", "management_summary"):
+        narrative_signals += int(is_meaningful_ai_text(result.get(name, "")))
+
+    for name in ("regulatory_points", "attention_items", "actions"):
+        values = result.get(name, [])
+
+        if isinstance(values, list) and any(
+            is_meaningful_ai_text(value) for value in values
+        ):
+            narrative_signals += 1
+
+    decision_signals = sum(
+        int(is_meaningful_ai_text(result.get(name, "")))
+        for name in ("event_nature", "risk_level", "importance")
+    )
+
+    return narrative_signals >= 2 or (
+        narrative_signals >= 1 and decision_signals >= 2
+    )
+
+
 @contextmanager
 def serialize_ai_cache():
     """Serialize read-modify-write cycles for the shared AI cache."""
@@ -122,6 +162,12 @@ def ai_event_cache_key(
                 "change_status",
                 ""
             ),
+
+        "url":
+            event.get(
+                "url",
+                ""
+            ),
     }
 
 
@@ -160,6 +206,13 @@ def sanitize_ai_analysis(
     str,
     Any
 ]:
+
+    ai_is_substantive = has_substantive_ai_analysis(result)
+
+
+    if not ai_is_substantive:
+
+        result = {}
 
     allowed = set(
         AI_ALLOWED_DEPARTMENTS
@@ -261,7 +314,7 @@ def sanitize_ai_analysis(
 
             else
 
-            "法令遵循部"
+            "法令遵循"
         )
 
 
@@ -392,35 +445,55 @@ def sanitize_ai_analysis(
                         value,
                         str
                     )
+                    and
+                    is_meaningful_ai_text(
+                        value
+                    )
                 ]
             )[:limit]
         )
 
 
-    summary = (
+    def choose_text(
+        name: str,
+        default: str = "待確認"
+    ) -> str:
 
-        clean_text(
+        value = clean_text(
             result.get(
-                "summary",
+                name,
                 ""
             )
         )
 
-        or
 
-        fallback.get(
+        if is_meaningful_ai_text(value):
+
+            return value
+
+
+        fallback_value = clean_text(
+            fallback.get(
+                name,
+                ""
+            )
+        )
+
+
+        return fallback_value or default
+
+
+    summary = (
+        choose_text(
             "summary",
             ""
         )
     )
 
 
-    management_summary = clean_text(
-
-        result.get(
-            "management_summary",
-            ""
-        )
+    management_summary = choose_text(
+        "management_summary",
+        ""
     )
 
 
@@ -442,60 +515,34 @@ def sanitize_ai_analysis(
             summary,
 
         "event_nature":
-            (
-                clean_text(
-                    result.get(
-                        "event_nature",
-                        "待確認"
-                    )
-                )
-                or
-                "待確認"
+            choose_text(
+                "event_nature"
             ),
 
         "risk_level":
-            (
-                clean_text(
-                    result.get(
-                        "risk_level",
-                        "待確認"
-                    )
-                )
-                or
-                "待確認"
+            choose_text(
+                "risk_level"
             ),
 
         "importance":
-            (
-                clean_text(
-                    result.get(
-                        "importance",
-                        "待確認"
-                    )
-                )
-                or
-                "待確認"
-            ),
-
-        "handling_deadline":
-            (
-                clean_text(
-                    result.get(
-                        "handling_deadline",
-                        "待確認"
-                    )
-                )
-                or
-                "待確認"
+            choose_text(
+                "importance"
             ),
 
         "responsible_department":
             responsible,
 
         "regulatory_points":
-            clean_list(
-                "regulatory_points",
-                5
+            (
+                clean_list(
+                    "regulatory_points",
+                    5
+                )
+                or
+                fallback.get(
+                    "regulatory_points",
+                    []
+                )[:5]
             ),
 
         "departments":
@@ -535,21 +582,50 @@ def sanitize_ai_analysis(
 
         "analysis_note":
             (
-                "AI 依據目前取得的官方來源"
-                "內容進行初步監理影響分析；"
-                "最終法規適用性與法律效果"
-                "仍應由公司專業人員確認。"
+                (
+                    "AI 依據目前取得的官方來源"
+                    "內容進行初步監理影響分析；"
+                    "最終法規適用性與法律效果"
+                    "仍應由公司專業人員確認。"
+                )
+                if ai_is_substantive
+                else
+                (
+                    "AI 回傳內容不足以形成深度分析，"
+                    "已保留規則式備援結果；"
+                    "請以官方原文及人工覆核為準。"
+                )
             ),
 
         "analysis_mode":
-            "AI 深度分析",
+            (
+                "AI 深度分析"
+                if ai_is_substantive
+                else
+                "規則備援"
+            ),
 
         "ai_model":
-            OLLAMA_MODEL,
+            (
+                OLLAMA_MODEL
+                if ai_is_substantive
+                else
+                ""
+            ),
 
         "ai_provider":
-            AI_PROVIDER_LABEL,
+            (
+                AI_PROVIDER_LABEL
+                if ai_is_substantive
+                else
+                ""
+            ),
 
         "ai_generated_at":
-            now_iso(),
+            (
+                now_iso()
+                if ai_is_substantive
+                else
+                ""
+            ),
     }

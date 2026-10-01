@@ -226,9 +226,11 @@ def date_sort_key(
     ]
 ) -> float:
 
-    value = event.get(
-        "published_at",
-        ""
+    value = (
+        event.get(
+            "published_at",
+            ""
+        )
     )
 
     if not value:

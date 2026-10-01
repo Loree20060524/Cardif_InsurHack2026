@@ -116,18 +116,17 @@ async function loadEvents(
         }
 
 
-        renderMetrics();
-
         renderList();
+
+        renderAdvancedFilters();
+
+        renderTicker();
 
         renderDetail();
 
         renderManagement();
 
         renderSources();
-
-        updateSystemStatus();
-
 
         if(
             state.stale
@@ -224,12 +223,6 @@ async function loadEvents(
             );
 
 
-        $('systemStatus').textContent =
-            '資料服務未連線';
-
-
-        $('aiStatus').textContent =
-            'AI 狀態無法取得';
     }
 
     finally{
@@ -329,6 +322,59 @@ function showView(
 
 
 /* =====================================================
+   Sidebar
+===================================================== */
+
+function setSidebarExpanded(
+    expanded
+){
+
+    const sidebar =
+        $('sidebar');
+
+
+    const toggle =
+        $('sidebarToggle');
+
+
+    sidebar
+    .classList
+    .toggle(
+
+        'expanded',
+
+        expanded
+    );
+
+
+    toggle.setAttribute(
+
+        'aria-expanded',
+
+        String(
+            expanded
+        )
+    );
+
+
+    toggle.setAttribute(
+
+        'aria-label',
+
+        expanded
+
+        ?
+
+        '收合主選單'
+
+        :
+
+        '展開主選單'
+    );
+}
+
+
+/* =====================================================
    Toast
 ===================================================== */
 
@@ -376,6 +422,48 @@ function toast(
    User Events
 ===================================================== */
 
+$('sidebarToggle').onclick =
+    () =>
+        setSidebarExpanded(
+
+            !$('sidebar')
+            .classList
+            .contains(
+                'expanded'
+            )
+        );
+
+
+document.addEventListener(
+
+    'keydown',
+
+    event => {
+
+        if(
+            event.key
+            ===
+            'Escape'
+        ){
+
+            setSidebarExpanded(
+                false
+            );
+
+
+            if(
+                state.advancedFilterOpen
+            ){
+
+                setAdvancedFilterOpen(
+                    false
+                );
+            }
+        }
+    }
+);
+
+
 $('search').oninput =
     event => {
 
@@ -388,45 +476,41 @@ $('search').oninput =
     };
 
 
-document
-.querySelectorAll(
-    '.chip'
-)
-.forEach(
-
-    chip =>
-
-        chip.onclick =
-            () => {
+$('advancedFilterButton').onclick =
+    () =>
+        setAdvancedFilterOpen(
+            !state.advancedFilterOpen
+        );
 
 
-                state.filter =
-                    chip.dataset.filter;
+$('clearAdvancedFilters').onclick =
+    clearAdvancedFilterDraft;
 
 
-                document
-                .querySelectorAll(
-                    '.chip'
-                )
-                .forEach(
-
-                    item =>
-
-                        item
-                        .classList
-                        .toggle(
-
-                            'active',
-
-                            item
-                            ===
-                            chip
-                        )
-                );
+$('applyAdvancedFilters').onclick =
+    applyAdvancedFilterDraft;
 
 
-                renderList();
-            }
+document.addEventListener(
+
+    'click',
+
+    event => {
+
+        if(
+            state.advancedFilterOpen
+            &&
+            !$('advancedFilter')
+            .contains(
+                event.target
+            )
+        ){
+
+            setAdvancedFilterOpen(
+                false
+            );
+        }
+    }
 );
 
 
@@ -439,10 +523,26 @@ document
     button =>
 
         button.onclick =
-            () =>
+            () => {
+
                 showView(
                     button.dataset.view
-                )
+                );
+
+
+                if(
+                    window
+                    .matchMedia(
+                        '(max-width:700px)'
+                    )
+                    .matches
+                ){
+
+                    setSidebarExpanded(
+                        false
+                    );
+                }
+            }
 );
 
 
@@ -451,6 +551,8 @@ $('refreshBtn').onclick =
 
 
         state.aiRequested.clear();
+
+        state.aiFailed.clear();
 
 
         loadEvents(
@@ -510,6 +612,11 @@ $('reportBtn').onclick =
 /* =====================================================
    Initialize
 ===================================================== */
+
+setSidebarExpanded(
+    false
+);
+
 
 loadEvents(
     false

@@ -4,23 +4,29 @@
 
 .toolbar{
 
-    display:flex;
+    position:relative;
+
+    z-index:9;
+
+    display:grid;
+
+    grid-template-columns:
+        minmax(0,1fr)
+        auto;
 
     gap:10px;
 
-    align-items:center;
+    align-items:start;
 
     margin-bottom:12px;
-
-    flex-wrap:wrap;
 }
 
 
 .search{
 
-    flex:1;
+    width:100%;
 
-    min-width:220px;
+    height:46px;
 
     border:
         1px solid
@@ -31,7 +37,7 @@
     border-radius:9px;
 
     padding:
-        10px 12px;
+        0 12px;
 
     outline:none;
 }
@@ -43,17 +49,233 @@
 }
 
 
-.chips{
+.advanced-filter{
 
-    display:flex;
+    position:relative;
 
-    gap:6px;
-
-    flex-wrap:wrap;
+    min-width:154px;
 }
 
 
-.chip{
+.advanced-filter-button{
+
+    width:100%;
+
+    height:46px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:7px;
+
+    padding:
+        0 13px;
+
+    border:
+        1px solid
+        var(--brand);
+
+    border-radius:9px;
+
+    background:#fff;
+
+    color:var(--brand);
+
+    font-size:12px;
+
+    font-weight:900;
+}
+
+
+.advanced-filter-button:hover,
+.advanced-filter-button.active{
+
+    background:var(--brand);
+
+    color:#fff;
+}
+
+
+.advanced-filter-count{
+
+    display:inline-grid;
+
+    place-items:center;
+
+    min-width:21px;
+
+    height:21px;
+
+    padding:
+        0 6px;
+
+    border-radius:999px;
+
+    background:var(--soft);
+
+    color:var(--brand);
+
+    font-size:10px;
+}
+
+
+.advanced-filter-button.active
+.advanced-filter-count{
+
+    background:#fff;
+}
+
+
+.advanced-filter-chevron{
+
+    transition:
+        transform .18s ease;
+}
+
+
+.advanced-filter-button.active
+.advanced-filter-chevron{
+
+    transform:
+        rotate(180deg);
+}
+
+
+.advanced-filter-panel{
+
+    position:absolute;
+
+    top:56px;
+
+    right:0;
+
+    width:
+        min(
+            640px,
+            calc(100vw - 130px)
+        );
+
+    overflow:hidden;
+
+    border:
+        1px solid
+        var(--line);
+
+    border-radius:14px;
+
+    background:#fff;
+
+    box-shadow:
+        0 18px 50px
+        rgba(20,55,47,.16);
+}
+
+
+.advanced-filter-header,
+.advanced-filter-label,
+.advanced-filter-actions{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+}
+
+
+.advanced-filter-header{
+
+    padding:
+        16px 18px;
+
+    border-bottom:
+        1px solid
+        var(--line);
+}
+
+
+.advanced-filter-header strong{
+
+    font-size:14px;
+}
+
+
+.advanced-filter-header small,
+.advanced-filter-label small,
+.advanced-filter-actions > span{
+
+    color:var(--muted);
+
+    font-size:10px;
+}
+
+
+.advanced-filter-section{
+
+    padding:
+        15px 18px;
+}
+
+
+.advanced-filter-section
++
+.advanced-filter-section{
+
+    border-top:
+        1px solid
+        #edf2f0;
+}
+
+
+.advanced-filter-label{
+
+    margin-bottom:10px;
+
+    font-size:12px;
+}
+
+
+.advanced-filter-options{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:8px;
+}
+
+
+.advanced-filter-option{
+
+    position:relative;
+}
+
+
+.advanced-filter-option input{
+
+    position:absolute;
+
+    opacity:0;
+
+    pointer-events:none;
+}
+
+
+.advanced-filter-option span{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:7px;
+
+    padding:
+        7px 10px;
 
     border:
         1px solid
@@ -63,9 +285,6 @@
 
     border-radius:999px;
 
-    padding:
-        7px 10px;
-
     font-size:11px;
 
     font-weight:800;
@@ -74,7 +293,41 @@
 }
 
 
-.chip.active{
+.advanced-filter-option span::before{
+
+    content:'';
+
+    width:13px;
+
+    height:13px;
+
+    border:
+        1.5px solid
+        #98aaa4;
+
+    border-radius:4px;
+
+    background:#fff;
+}
+
+
+.advanced-filter-option
+input:focus-visible
++
+span{
+
+    outline:
+        2px solid
+        #91b7ac;
+
+    outline-offset:2px;
+}
+
+
+.advanced-filter-option
+input:checked
++
+span{
 
     background:
         var(--soft);
@@ -82,6 +335,369 @@
     border-color:#aaccc2;
 
     color:var(--brand);
+}
+
+
+.advanced-filter-option
+input:checked
++
+span::before{
+
+    content:'✓';
+
+    display:grid;
+
+    place-items:center;
+
+    border-color:var(--brand);
+
+    background:var(--brand);
+
+    color:#fff;
+
+    font-size:9px;
+}
+
+
+.advanced-filter-actions{
+
+    padding:
+        12px 18px;
+
+    border-top:
+        1px solid
+        var(--line);
+
+    background:#f8fbfa;
+}
+
+
+.advanced-filter-actions > div{
+
+    display:flex;
+
+    gap:7px;
+}
+
+
+.advanced-filter-actions button{
+
+    padding:
+        8px 12px;
+
+    border-radius:8px;
+
+    font-size:11px;
+
+    font-weight:900;
+}
+
+
+.advanced-filter-actions
+.secondary-button{
+
+    border:
+        1px solid
+        var(--line);
+
+    background:#fff;
+
+    color:#54625e;
+}
+
+
+.advanced-filter-actions
+.primary-button{
+
+    border:
+        1px solid
+        var(--brand);
+
+    background:var(--brand);
+
+    color:#fff;
+}
+
+
+/* =====================================================
+   Latest News Ticker
+===================================================== */
+
+.news-ticker{
+
+    display:grid;
+
+    grid-template-columns:
+        auto
+        minmax(0,1fr);
+
+    align-items:center;
+
+    min-height:42px;
+
+    margin:
+        -2px 0 14px;
+
+    overflow:hidden;
+
+    border:
+        1px solid
+        var(--line);
+
+    border-radius:10px;
+
+    background:#fff;
+
+    box-shadow:
+        0 6px 20px
+        rgba(25,58,50,.045);
+}
+
+
+.ticker-label{
+
+    align-self:stretch;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:7px;
+
+    padding:
+        0 13px;
+
+    background:
+        var(--brand);
+
+    color:#fff;
+
+    white-space:nowrap;
+
+    font-size:10px;
+
+    font-weight:900;
+}
+
+
+.ticker-label span{
+
+    width:7px;
+
+    height:7px;
+
+    border-radius:50%;
+
+    background:#8fe0c8;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(143,224,200,.16);
+}
+
+
+.ticker-viewport{
+
+    position:relative;
+
+    min-width:0;
+
+    overflow:hidden;
+}
+
+
+.ticker-viewport::before,
+.ticker-viewport::after{
+
+    content:"";
+
+    position:absolute;
+
+    inset:
+        0 auto 0 0;
+
+    z-index:2;
+
+    width:24px;
+
+    pointer-events:none;
+
+    background:
+        linear-gradient(
+            90deg,
+            #fff,
+            transparent
+        );
+}
+
+
+.ticker-viewport::after{
+
+    inset:
+        0 0 0 auto;
+
+    background:
+        linear-gradient(
+            270deg,
+            #fff,
+            transparent
+        );
+}
+
+
+.ticker-track{
+
+    --ticker-duration:48s;
+
+    display:flex;
+
+    width:max-content;
+
+    will-change:transform;
+
+    animation:
+        ticker-scroll
+        var(--ticker-duration)
+        linear
+        infinite;
+}
+
+
+.ticker-viewport:hover .ticker-track,
+.ticker-viewport:focus-within .ticker-track{
+
+    animation-play-state:
+        paused;
+}
+
+
+.ticker-group{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:34px;
+
+    flex:none;
+
+    padding-right:34px;
+}
+
+
+.ticker-item{
+
+    position:relative;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    max-width:520px;
+
+    min-height:40px;
+
+    padding:0;
+
+    border:0;
+
+    background:transparent;
+
+    color:var(--text);
+
+    white-space:nowrap;
+
+    text-align:left;
+}
+
+
+.ticker-item::after{
+
+    content:"";
+
+    position:absolute;
+
+    right:-19px;
+
+    width:4px;
+
+    height:4px;
+
+    border-radius:50%;
+
+    background:#a9bbb5;
+}
+
+
+.ticker-item span{
+
+    padding:
+        3px 6px;
+
+    border-radius:999px;
+
+    background:
+        var(--soft);
+
+    color:
+        var(--brand);
+
+    font-size:9px;
+
+    font-weight:900;
+}
+
+
+.ticker-item time{
+
+    color:var(--muted);
+
+    font-size:9px;
+}
+
+
+.ticker-item strong{
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    font-size:10px;
+
+    font-weight:800;
+}
+
+
+.ticker-item:hover strong,
+.ticker-item:focus-visible strong{
+
+    color:var(--brand);
+
+    text-decoration:underline;
+
+    text-underline-offset:3px;
+}
+
+
+.ticker-item:focus-visible{
+
+    outline:
+        2px solid
+        #91b7ac;
+
+    outline-offset:3px;
+}
+
+
+@keyframes ticker-scroll{
+
+    to{
+
+        transform:
+            translateX(-50%);
+    }
 }
 
 
