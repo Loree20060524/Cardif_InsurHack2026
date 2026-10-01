@@ -365,7 +365,7 @@ class Handler(
                 payload.get(
                     "events",
                     []
-                )[:7]
+                )
             )
 
 

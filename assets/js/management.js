@@ -377,109 +377,40 @@ function renderTopics(){
     ];
 
 
-    const counts =
+    const dated = state.events
+        .map(event => ({ event, date: Date.parse(event.published_at || '') }))
+        .filter(item => Number.isFinite(item.date));
 
-        topics
-        .map(
+    if (!dated.length) {
+        $('trendList').innerHTML = '<p>目前沒有足夠的發布日期可比較主題變化。</p>';
+        return;
+    }
 
-            (
-                [
-                    name,
-                    keywords
-                ]
-            ) => [
+    const anchor = Math.max(...dated.map(item => item.date));
+    const day = 24 * 60 * 60 * 1000;
+    const recentStart = anchor - 30 * day;
+    const priorStart = anchor - 60 * day;
 
+    const counts = topics.map(([name, keywords]) => {
+        const matches = dated.filter(({event, date}) => {
+            if (date < priorStart || date > anchor) return false;
+            // Count only official source text, never generated fallback advice.
+            const text = `${event.title || ''} ${event.description || ''}`.toLowerCase();
+            return keywords.some(keyword => text.includes(keyword.toLowerCase()));
+        });
+        return {
+            name,
+            recent: matches.filter(item => item.date >= recentStart).length,
+            prior: matches.filter(item => item.date < recentStart).length,
+        };
+    }).sort((a, b) => b.recent - a.recent || b.prior - a.prior);
 
-                name,
+    const max = Math.max(1, ...counts.map(item => item.recent));
+    const anchorLabel = new Date(anchor).toLocaleDateString('zh-TW');
 
-
-                state.events.filter(
-
-                    event => {
-
-
-                        const analysis =
-                            event.analysis
-                            ||
-                            {};
-
-
-                        const text = [
-
-                            event.title,
-
-                            event.description,
-
-                            analysis.summary,
-
-                            ...(
-                                analysis.regulatory_points
-                                ||
-                                []
-                            ),
-
-                            ...(
-                                analysis.attention_items
-                                ||
-                                []
-                            )
-
-                        ]
-                        .join(
-                            ' '
-                        );
-
-
-                        return keywords.some(
-
-                            keyword =>
-
-                                text
-                                .toLowerCase()
-                                .includes(
-                                    keyword.toLowerCase()
-                                )
-                        );
-                    }
-
-                ).length,
-            ]
-        )
-        .sort(
-
-            (
-                a,
-                b
-            ) =>
-
-                b[1]
-                -
-                a[1]
-        );
-
-
-    const max = Math.max(
-
-        1,
-
-        ...counts.map(
-            item =>
-                item[1]
-        )
-    );
-
-
-    $('trendList').innerHTML =
-
-        counts
-        .map(
-
-            (
-                [
-                    name,
-                    count
-                ]
-            ) => `
+    $('trendList').innerHTML = `
+        <p class="trend-scope">以最新事件 ${esc(anchorLabel)} 為基準；近 30 日與前 30 日比較。僅計入目前收錄且有發布日期的官方事件。</p>
+        ${counts.map(({name, recent, prior}) => `
 
             <div class="trend-row">
 
@@ -500,7 +431,7 @@ function renderTopics(){
                             width:
                             ${
                                 Math.round(
-                                    count
+                                    recent
                                     /
                                     max
                                     *
@@ -516,15 +447,13 @@ function renderTopics(){
 
 
                 <b>
-                    ${count}
+                    ${recent} / ${prior}
                 </b>
 
 
             </div>
 
-            `
-        )
-        .join('');
+            `).join('')}`;
 }
 
 
@@ -569,7 +498,7 @@ async function generateManagementReport(){
         <div class="management-summary-text">
 
             AI 正在綜合近期監理事件，
-            分析整體風險、優先事件與監理趨勢。
+            分析近期風險、優先事件與重複出現的監理主題。
 
         </div>
 
@@ -713,7 +642,7 @@ async function generateManagementReport(){
                 <div class="management-stat">
 
                     <span>
-                        監理趨勢觀察
+                        近期主題觀察
                     </span>
 
                     <b>
@@ -848,7 +777,7 @@ async function generateManagementReport(){
 
 
                     <h3>
-                        監理趨勢觀察
+                        近期主題觀察
                     </h3>
 
 

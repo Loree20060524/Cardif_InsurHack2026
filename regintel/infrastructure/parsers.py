@@ -16,6 +16,17 @@ from ..source_catalog import SOURCES
 SOURCE_PARSER_VERSION = "regintel-source-parser-v2-law-parent-dates"
 
 
+def normalize_source_url(value: str) -> str:
+    """Undo entity encoding left behind by nested XML/HTML source feeds."""
+    url = str(value or "").strip()
+    for _ in range(3):
+        decoded = html.unescape(url)
+        if decoded == url:
+            break
+        url = decoded
+    return url
+
+
 # =========================================================
 # Event normalization
 # =========================================================
@@ -87,6 +98,8 @@ def normalize_event(
             date
         )
     )
+
+    link = normalize_source_url(link)
 
 
     return {

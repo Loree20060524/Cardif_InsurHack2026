@@ -577,7 +577,7 @@
     display:grid;
 
     grid-template-columns:
-        105px 1fr 28px;
+        105px 1fr 72px;
 
     gap:8px;
 

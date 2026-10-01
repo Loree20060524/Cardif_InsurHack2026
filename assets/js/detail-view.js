@@ -145,7 +145,9 @@ function renderDetail(
                     <span class="workflow">
 
                         ${esc(
-                            event.change_status
+                            event.change_status === '異動'
+                                ? '來源文字異動／待核對條文'
+                                : '新增來源資料／待核對適用性'
                         )}
 
                     </span>

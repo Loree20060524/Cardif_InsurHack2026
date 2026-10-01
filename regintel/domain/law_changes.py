@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -52,39 +53,8 @@ def law_fingerprint(
     ]
 ) -> str:
 
-    material = "|".join(
-
-        [
-
-            clean_text(
-                event.get(
-                    "title",
-                    ""
-                )
-            ),
-
-            clean_text(
-                event.get(
-                    "description",
-                    ""
-                )
-            ),
-
-            clean_text(
-                event.get(
-                    "published_at",
-                    ""
-                )
-            ),
-
-            clean_text(
-                event.get(
-                    "category",
-                    ""
-                )
-            ),
-        ]
-    )
+    # Metadata updates alone do not establish a change in legal requirements.
+    material = clean_text(event.get("description", ""))
 
 
     return (
@@ -97,6 +67,20 @@ def law_fingerprint(
         )
         .hexdigest()
     )
+
+
+def has_law_content(event: dict[str, Any]) -> bool:
+    """A readable official text is required before asserting a change."""
+    title = clean_text(event.get("title", ""))
+    description = clean_text(event.get("description", ""))
+    return bool(description) and not bool(
+        re.search(r"\.(?:pdf|docx?|odt|xlsx?|ods)$", title, re.I)
+    )
+
+
+def has_supported_law_change(event: dict[str, Any]) -> bool:
+    """Legacy signals without a recorded content basis are not trustworthy."""
+    return has_law_content(event) and bool(clean_text(event.get("change_basis", "")))
 
 
 def detect_law_changes(
@@ -156,6 +140,9 @@ def detect_law_changes(
 
     for event in current_events:
 
+        if not has_law_content(event):
+            continue
+
         key = law_entity_key(
             event
         )
@@ -186,6 +173,12 @@ def detect_law_changes(
             ] = "新增"
 
 
+        elif not has_law_content(previous):
+
+            # The source gained readable text; that alone is not a new law.
+            continue
+
+
         elif (
             law_fingerprint(
                 previous
@@ -204,8 +197,13 @@ def detect_law_changes(
                 "change_status"
             ] = "異動"
 
+            changed["change_basis"] = "官方來源文字變動；實際條文差異待核對"
+
 
         if changed:
+
+            if "change_basis" not in changed:
+                changed["change_basis"] = "新增可讀法規資料；適用性待核對"
 
             changed[
                 "detected_at"
@@ -304,6 +302,9 @@ def merge_recent_law_signals(
         +
         new_signals
     ):
+
+        if not has_supported_law_change(event):
+            continue
 
         detected = (
             parse_detected_at(
