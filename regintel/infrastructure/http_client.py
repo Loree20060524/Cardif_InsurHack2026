@@ -222,7 +222,8 @@ def fetch_url(
 # =========================================================
 
 def robots_allowed(
-    source_key: str
+    source_key: str,
+    url: str = "",
 ) -> bool:
 
     source = (
@@ -238,18 +239,14 @@ def robots_allowed(
         ]
         !=
         "announcement_html"
+        and not url
     ):
 
         return True
 
 
-    parsed = (
-        urllib.parse.urlparse(
-            source[
-                "url"
-            ]
-        )
-    )
+    request_url = url or source["url"]
+    parsed = urllib.parse.urlparse(request_url)
 
 
     robots_url = (
@@ -265,7 +262,7 @@ def robots_allowed(
 
     cached = (
         _robots_cache.get(
-            robots_url
+            request_url
         )
     )
 
@@ -327,9 +324,7 @@ def robots_allowed(
             allowed = (
                 parser.can_fetch(
                     USER_AGENT,
-                    source[
-                        "url"
-                    ]
+                    request_url
                 )
             )
 
@@ -340,7 +335,7 @@ def robots_allowed(
 
 
     _robots_cache[
-        robots_url
+        request_url
     ] = (
         now,
         allowed

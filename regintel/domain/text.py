@@ -54,6 +54,12 @@ def clean_text(
     ).strip()
 
 
+def normalize_document_text(value: str) -> str:
+    """Normalize public source text while preserving paragraph breaks."""
+    value = value.replace("\r\n", "\n").replace("\r", "\n").replace("\x00", "")
+    return "\n".join(re.sub(r"[ \t]+", " ", line).strip() for line in value.split("\n")).strip()
+
+
 def decode_bytes(
     data: bytes,
     content_type: str = ""

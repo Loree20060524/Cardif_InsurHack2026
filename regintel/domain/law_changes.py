@@ -11,6 +11,12 @@ from ..config import LAW_SIGNAL_RETENTION_DAYS
 from .text import clean_text, now_iso
 
 
+def latest_amendment_record(description: str) -> str:
+    """Keep the newest numbered entry when a law page is a full history list."""
+    matches = list(re.finditer(r"(?:^|\s)\d{1,3}[.．]\s*中華民國", description))
+    return description[matches[-1].start():].strip() if len(matches) >= 2 else description
+
+
 # =========================================================
 # 法規異動偵測
 # =========================================================

@@ -839,20 +839,6 @@ button {
     box-shadow: none !important;
 }
 
-#reportBtn {
-    margin-top: 14px !important;
-}
-
-.report-box {
-    margin-top: 14px !important;
-    padding: 16px !important;
-    border: 1px solid var(--ri-border) !important;
-    border-radius: 7px !important;
-    background: var(--ri-surface-soft) !important;
-    color: var(--ri-ink-2) !important;
-    box-shadow: none !important;
-}
-
 /* Sources modal ------------------------------------------------- */
 .modal-bg {
     position: fixed !important;
@@ -1060,6 +1046,8 @@ button {
 }
 </style>
 <link rel="stylesheet" href="assets/css/ledger.css">
+<link rel="stylesheet" href="assets/css/pagination.css">
+<link rel="stylesheet" href="assets/css/regulatory-qa.css">
 </head>
 
 <body class="ledger-app">
@@ -1129,11 +1117,12 @@ button {
     <header class="d-header">
         <div class="d-brand"><strong>RegIntel</strong><span>保險監理資訊</span></div>
         <nav class="nav d-header-nav" aria-label="主導覽">
-            <button class="active" data-view="intel" type="button">監理資訊</button>
+            <button class="active" data-view="intel" type="button" aria-current="page">監理資訊</button>
             <button data-view="management" type="button">管理摘要</button>
+            <button data-view="qa" type="button">AI 監理問答</button>
         </nav>
         <div class="d-header-actions">
-            <span class="d-connect"><i aria-hidden="true"></i> 官方來源資料</span>
+            <span class="d-connect">主管機關公開資料</span>
             <button type="button" id="sourcesBtn">來源狀態</button>
             <button type="button" class="d-refresh" id="refreshBtn">更新最新資訊</button>
         </div>
@@ -1157,7 +1146,6 @@ button {
             <div class="d-view">
                 <div class="d-heading">
                     <div>
-                        <span class="d-overline">保險監理資訊</span>
                         <h2>監理資訊</h2>
                         <p>彙整主管機關公告與法規更新，選取項目查看重點及可能影響。</p>
                     </div>
@@ -1205,6 +1193,20 @@ button {
                                         </div>
                                         <div class="advanced-filter-options" id="departmentFilterOptions"></div>
                                     </div>
+                                    <div class="advanced-filter-section">
+                                        <div class="advanced-filter-label">
+                                            <strong>風險程度</strong>
+                                            <small>同類條件擇一符合</small>
+                                        </div>
+                                        <div class="advanced-filter-options" id="riskFilterOptions"></div>
+                                    </div>
+                                    <div class="advanced-filter-section">
+                                        <div class="advanced-filter-label">
+                                            <strong>重要性</strong>
+                                            <small>同類條件擇一符合</small>
+                                        </div>
+                                        <div class="advanced-filter-options" id="importanceFilterOptions"></div>
+                                    </div>
                                     <div class="advanced-filter-actions">
                                         <span id="advancedFilterDraftSummary">尚未選擇條件</span>
                                         <div>
@@ -1217,9 +1219,10 @@ button {
                         </div>
                         <div class="d-table-head"><span>發布日期</span><span>類型</span><span>公告與法規</span></div>
                         <div class="d-table-body event-list" id="eventList"></div>
+                        <nav class="list-pagination" id="eventPagination" aria-label="最新公告與法規分頁"></nav>
                     </section>
 
-                    <section class="d-dossier detail" id="eventDetail" aria-label="選取事件的監理分析">
+                    <section class="d-dossier detail" id="eventDetail" aria-label="選取事件的監理分析" tabindex="-1">
                         <div class="empty">正在取得監理資訊…</div>
                     </section>
                 </div>
@@ -1231,31 +1234,93 @@ button {
             </div>
         </section>
 
+        <section id="qaView" class="hidden" aria-labelledby="qaTitle">
+            <div class="d-heading">
+                <div>
+                    <h2 id="qaTitle">AI 監理問答</h2>
+                    <p>提出問題，依平台已收錄的官方資料整理回答與原文依據。</p>
+                </div>
+            </div>
+            <div class="qa-workspace">
+                <form id="qaForm" class="qa-form">
+                    <label for="qaQuestion">監理問題</label>
+                    <textarea id="qaQuestion" rows="3" minlength="2" maxlength="500" required placeholder="例如：保險業投資創投事業的預告修正重點是什麼？" aria-describedby="qaScopeNote"></textarea>
+                    <details class="qa-filters">
+                        <summary>搜尋範圍</summary>
+                        <div class="qa-filter-fields">
+                            <label>資料類型<select id="qaType"><option value="全部">全部類型</option><option>法規</option><option>公告</option><option>裁罰</option><option>監理新聞</option><option>監理資訊</option></select></label>
+                            <label>發布／修正起日<input type="date" id="qaDateFrom"></label>
+                            <label>發布／修正迄日<input type="date" id="qaDateTo"></label>
+                        </div>
+                        <p>日期依官方發布或修正／公布日篩選，不代表法規生效期間。</p>
+                    </details>
+                    <div class="qa-submit-row">
+                        <p id="qaScopeNote">每次獨立回答，範圍限平台已收錄的官方資料。</p>
+                        <button type="submit" id="qaSubmit">送出問題</button>
+                    </div>
+                    <p id="qaStatus" class="qa-status" role="status" aria-live="polite"></p>
+                </form>
+                <section id="qaResult" class="qa-result" aria-label="監理問答結果" aria-busy="false" tabindex="-1">
+                    <div class="qa-empty"><strong>尚未提問</strong><p>回答會附原文依據，AI 推論另行標示。</p></div>
+                </section>
+            </div>
+        </section>
+
         <section id="managementView" class="hidden">
-            <div class="view-heading">
-                <div class="view-heading-copy">
-                    <span class="view-kicker">監理趨勢觀察</span>
-                    <h2>近期監理趨勢</h2>
-                    <p>從近期監理訊號中整理應優先關注的事件與主題分布，協助辨識監理關注方向。</p>
+            <div class="d-heading">
+                <div>
+                    <h2>管理摘要</h2>
+                    <p>勾選想要納入的公告、法規或新聞，由 AI 彙整所選資訊的重點與可能影響。</p>
                 </div>
             </div>
 
+            <div class="management-actionbar">
+                <div class="management-actionbar-copy">
+                    <span id="managementSelectionCount" aria-live="polite">已選 0 筆</span>
+                    <p class="management-selection-hint" id="managementSelectionHint">請至少選擇一筆資訊。</p>
+                </div>
+                <button type="button" class="btn primary" id="reportBtn" disabled>
+                    產生管理摘要
+                </button>
+            </div>
+
             <div class="management-grid">
-                <div class="card">
-                    <h2>近期優先關注</h2>
-                    <div id="priorityList"></div>
-
-                    <button class="btn primary" id="reportBtn">
-                        產生管理摘要
-                    </button>
-
-                    <div id="reportBox" class="report-box hidden"></div>
+                <div class="card management-source-panel">
+                    <h2>選擇摘要資訊</h2>
+                    <div class="management-selection-search">
+                        <input id="managementSearch" type="search" placeholder="搜尋標題、來源或關鍵字" aria-label="搜尋摘要資訊">
+                        <select id="managementTypeFilter" aria-label="摘要資訊類型">
+                            <option value="全部">全部類型</option>
+                            <option value="法規">法規</option>
+                            <option value="公告">公告</option>
+                            <option value="裁罰">裁罰</option>
+                            <option value="監理新聞">監理新聞</option>
+                            <option value="監理資訊">監理資訊</option>
+                        </select>
+                    </div>
+                    <div class="management-selection-toolbar">
+                        <div>
+                            <button type="button" class="btn" id="selectManagementVisible">全選本頁</button>
+                            <button type="button" class="btn" id="clearManagementSelection">清除選取</button>
+                        </div>
+                    </div>
+                    <div id="priorityList" class="management-selection-list" aria-label="可納入管理摘要的資訊"></div>
+                    <nav class="list-pagination" id="managementPagination" aria-label="摘要資訊分頁"></nav>
+                    <details class="management-topics">
+                        <summary>已載入資訊的監理主題</summary>
+                        <div id="trendList"></div>
+                    </details>
                 </div>
 
-                <div class="card">
-                    <h2>近期監理主題</h2>
-                    <div id="trendList"></div>
-                </div>
+                <section class="card management-result-panel" aria-labelledby="managementResultTitle">
+                    <h2 id="managementResultTitle">摘要結果</h2>
+                    <div id="reportBox" class="report-box" tabindex="-1" aria-busy="false">
+                        <div class="management-report-empty">
+                            <strong>尚未產生摘要</strong>
+                            <p>勾選資訊後產生摘要，結果會附本次使用的官方來源。</p>
+                        </div>
+                    </div>
+                </section>
             </div>
         </section>
     </div>
@@ -1263,9 +1328,9 @@ button {
 </div>
 
 <div class="modal-bg hidden" id="sourcesModal">
-    <div class="modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sourcesTitle">
         <div class="modal-head">
-            <h2>資料來源狀態</h2>
+            <h2 id="sourcesTitle">資料來源狀態</h2>
             <button class="btn" id="closeSources">關閉</button>
         </div>
         <div id="sourceStatusList"></div>
@@ -1312,12 +1377,15 @@ button {
 </script>
 
 <script src="assets/js/core.js"></script>
+<script src="assets/js/pagination.js"></script>
 <script src="assets/js/dashboard.js"></script>
 <script src="assets/js/ai-analysis.js"></script>
 <script src="assets/js/impact-chain.js"></script>
+<script src="assets/js/law-comparison.js"></script>
 <script src="assets/js/detail-view.js"></script>
 <script src="assets/js/management.js"></script>
 <script src="assets/js/sources.js"></script>
+<script src="assets/js/regulatory-qa.js"></script>
 <script src="assets/js/app.js"></script>
 
 <script>
@@ -1329,7 +1397,8 @@ button {
     const viewTitle = document.getElementById('viewTitle');
     const labels = {
         intel: '監理情報',
-        management: '監理趨勢'
+        management: '監理趨勢',
+        qa: 'AI 監理問答'
     };
 
     document.querySelectorAll('[data-view]').forEach((button) => {

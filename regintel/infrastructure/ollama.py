@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Any
 
@@ -11,10 +13,43 @@ from ..config import (
     MAX_RESPONSE_BYTES,
     OLLAMA_API_URL,
     OLLAMA_MODEL,
+    OLLAMA_THINK,
+    OLLAMA_KEEP_ALIVE,
     OLLAMA_TIMEOUT,
     USER_AGENT,
 )
 from ..domain.text import clean_text
+
+
+def ollama_timings(payload: dict[str, Any], elapsed: float) -> dict[str, Any]:
+    """Keep server measurements without retaining model reasoning text."""
+    timings: dict[str, Any] = {"request_seconds": round(elapsed, 3)}
+    for source, target in (
+        ("load_duration", "load_seconds"),
+        ("prompt_eval_duration", "input_seconds"),
+        ("eval_duration", "generation_seconds"),
+    ):
+        value = payload.get(source)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            timings[target] = round(value / 1_000_000_000, 3)
+    for source, target in (("prompt_eval_count", "input_tokens"), ("eval_count", "output_tokens")):
+        value = payload.get(source)
+        if isinstance(value, int) and not isinstance(value, bool):
+            timings[target] = value
+    return timings
+
+
+def preload_ollama() -> dict[str, Any]:
+    """Load the installed model without generating text or touching analysis caches."""
+    body = {"model": OLLAMA_MODEL, "messages": [], "stream": False, "keep_alive": OLLAMA_KEEP_ALIVE}
+    request = urllib.request.Request(
+        OLLAMA_API_URL, data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json"}, method="POST",
+    )
+    started = time.perf_counter()
+    with urllib.request.urlopen(request, timeout=OLLAMA_TIMEOUT) as response:
+        payload = json.loads(response.read(MAX_RESPONSE_BYTES).decode("utf-8"))
+    return ollama_timings(payload, time.perf_counter() - started)
 
 
 # =========================================================
@@ -34,10 +69,21 @@ def call_ollama_structured_json(
         Any
     ],
 
+    context_window: int | None = None,
+
+    local_only: bool = False,
+
+    think: bool | None = None,
+
 ) -> dict[
     str,
     Any
 ]:
+
+    if local_only:
+        endpoint = urllib.parse.urlsplit(OLLAMA_API_URL)
+        if endpoint.hostname not in {"127.0.0.1", "localhost", "::1"} or endpoint.scheme not in {"http", "https"} or endpoint.username or endpoint.password or "cloud" in OLLAMA_MODEL.lower():
+            raise RuntimeError("此分析僅允許本機 Ollama 與本機模型，請檢查模型服務設定。")
 
     request_body = {
 
@@ -85,9 +131,26 @@ def call_ollama_structured_json(
         },
 
         "keep_alive":
-            "10m",
+            "0" if local_only else OLLAMA_KEEP_ALIVE,
     }
 
+
+    if context_window is not None:
+        request_body["options"]["num_ctx"] = context_window
+
+    effective_think = OLLAMA_THINK if think is None else think
+    if effective_think is not None:
+        request_body["think"] = effective_think
+
+    if local_only:
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):
+                raise urllib.error.HTTPError(req.full_url, code, "本機分析不允許重新導向。", headers, fp)
+
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
+        open_url = opener.open
+    else:
+        open_url = urllib.request.urlopen
 
     request = (
         urllib.request.Request(
@@ -118,9 +181,10 @@ def call_ollama_structured_json(
     )
 
 
+    request_started = time.perf_counter()
     try:
 
-        with urllib.request.urlopen(
+        with open_url(
             request,
             timeout=OLLAMA_TIMEOUT
         ) as response:
@@ -262,6 +326,7 @@ def call_ollama_structured_json(
         )
 
 
+    result["_ollama_timing"] = ollama_timings(payload, time.perf_counter() - request_started)
     return result
 
 

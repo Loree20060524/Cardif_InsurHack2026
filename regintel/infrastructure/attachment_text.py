@@ -46,6 +46,21 @@ def extract_attachment_text(
     """Extract plain text from supported attachment bytes."""
     suffix = pathlib.PurePath(filename).suffix.lower()
 
+    if suffix == ".pdf" or "application/pdf" in content_type.lower() or data.startswith(b"%PDF-"):
+        try:
+            from pypdf import PdfReader
+        except ImportError:
+            return ""
+        reader = PdfReader(io.BytesIO(data), strict=False)
+        if reader.is_encrypted:
+            return ""
+        parts = []
+        for page in reader.pages[:50]:
+            parts.append(page.extract_text() or "")
+            if sum(map(len, parts)) >= 50000:
+                break
+        return clean_text(" ".join(parts))
+
     if suffix == ".odt":
         return _extract_zipped_xml(data, "content.xml")
 

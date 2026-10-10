@@ -20,14 +20,29 @@ const state = {
     filters:{
         types:new Set(),
         departments:new Set(),
+        riskLevels:new Set(),
+        importanceLevels:new Set(),
     },
 
     filterDraft:{
         types:new Set(),
         departments:new Set(),
+        riskLevels:new Set(),
+        importanceLevels:new Set(),
     },
 
     advancedFilterOpen:false,
+
+    pagination:{
+        intel:{page:1, size:25},
+        management:{page:1, size:25},
+    },
+    history:{sources:{}, loading:false},
+
+    managementSelection:new Set(),
+    managementQuery:'',
+    managementType:'全部',
+    managementReportLoading:false,
 
     view:'intel',
 
@@ -533,6 +548,18 @@ const EVENT_TYPE_FILTER_OPTIONS = [
     '監理新聞',
 ];
 
+const RISK_LEVEL_FILTER_OPTIONS = [
+    '高',
+    '中',
+    '低',
+];
+
+const IMPORTANCE_FILTER_OPTIONS = [
+    '重大',
+    '重要',
+    '一般',
+];
+
 
 function copyAdvancedFilters(
     filters
@@ -548,6 +575,16 @@ function copyAdvancedFilters(
             new Set(
                 filters.departments
             ),
+
+        riskLevels:
+            new Set(
+                filters.riskLevels
+            ),
+
+        importanceLevels:
+            new Set(
+                filters.importanceLevels
+            ),
     };
 }
 
@@ -560,6 +597,10 @@ function advancedFilterCount(
         filters.types.size
         +
         filters.departments.size
+        +
+        filters.riskLevels.size
+        +
+        filters.importanceLevels.size
     );
 }
 
@@ -622,6 +663,25 @@ function filteredEvents(){
 
             if(!departmentOk){
 
+                return false;
+            }
+
+
+            const filterAnalysis = event.analysis || {};
+            const riskLevel = RISK_LEVEL_FILTER_OPTIONS.includes(filterAnalysis.risk_level)
+                ? filterAnalysis.risk_level
+                : '待確認';
+            const importance = IMPORTANCE_FILTER_OPTIONS.includes(filterAnalysis.importance)
+                ? filterAnalysis.importance
+                : '待確認';
+            const riskOk =
+                !state.filters.riskLevels.size
+                || state.filters.riskLevels.has(riskLevel);
+            const importanceOk =
+                !state.filters.importanceLevels.size
+                || state.filters.importanceLevels.has(importance);
+
+            if(!riskOk || !importanceOk){
                 return false;
             }
 

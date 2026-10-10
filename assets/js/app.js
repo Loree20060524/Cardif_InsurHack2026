@@ -59,6 +59,8 @@ async function loadEvents(
         const data =
             await response.json();
 
+        state.history.sources = data.history?.sources || {};
+
 
         state.events =
             data.events
@@ -248,6 +250,7 @@ function showView(
     state.view =
         view;
 
+    $('qaView').classList.toggle('hidden', view !== 'qa');
 
     $('intelView')
     .classList
@@ -273,7 +276,7 @@ function showView(
     );
 
 
-    $('viewTitle').textContent =
+    $('viewTitle').textContent = view === 'qa' ? 'AI 監理問答' :
 
         view
         ===
@@ -306,6 +309,9 @@ function showView(
                 ===
                 view
             );
+
+            if(button.dataset.view === view) button.setAttribute('aria-current', 'page');
+            else button.removeAttribute('aria-current');
         }
     );
 
@@ -317,6 +323,9 @@ function showView(
     ){
 
         renderManagement();
+    }
+    else if(view === 'intel'){
+        renderList();
     }
 }
 
@@ -446,6 +455,11 @@ document.addEventListener(
             'Escape'
         ){
 
+            if(!$('sourcesModal').classList.contains('hidden')){
+                closeSourcesModal();
+                return;
+            }
+
             setSidebarExpanded(
                 false
             );
@@ -470,6 +484,8 @@ $('search').oninput =
 
         state.query =
             event.target.value;
+
+        state.pagination.intel.page = 1;
 
 
         renderList();
@@ -573,17 +589,18 @@ $('sourcesBtn').onclick =
 
 
         renderSources();
+        document.querySelector('.shell').inert = true;
+        $('closeSources').focus();
     };
 
 
-$('closeSources').onclick =
-    () =>
+function closeSourcesModal(){
+    $('sourcesModal').classList.add('hidden');
+    document.querySelector('.shell').inert = false;
+    $('sourcesBtn').focus();
+}
 
-        $('sourcesModal')
-        .classList
-        .add(
-            'hidden'
-        );
+$('closeSources').onclick = closeSourcesModal;
 
 
 $('sourcesModal').onclick =
@@ -596,13 +613,25 @@ $('sourcesModal').onclick =
             $('sourcesModal')
         ){
 
-            $('sourcesModal')
-            .classList
-            .add(
-                'hidden'
-            );
+            closeSourcesModal();
         }
     };
+
+$('sourcesModal').addEventListener('keydown', event => {
+    if(event.key !== 'Tab') return;
+    const controls = Array.from($('sourcesModal').querySelectorAll('button, summary, a[href]'))
+        .filter(element => element.getClientRects().length && !element.disabled)
+        .filter(element => !element.closest('details:not([open])') || element.matches('summary'));
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if(event.shiftKey && document.activeElement === first){
+        event.preventDefault();
+        last?.focus();
+    }else if(!event.shiftKey && document.activeElement === last){
+        event.preventDefault();
+        first?.focus();
+    }
+});
 
 
 $('reportBtn').onclick =

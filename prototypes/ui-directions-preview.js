@@ -106,8 +106,9 @@
         const selected = (state.events || []).find(item => item.id === button.dataset.dAnalyze);
         if (!selected || state.aiLoading.has(selected.id)) return;
         state.aiRequested.delete(selected.id);
+        state.aiFailed.delete(selected.id);
         dAnalysisFailures.delete(selected.id);
-        ensureAIAnalysis(selected);
+        ensureAIAnalysis(selected, true);
         renderD();
     });
     dSearch.addEventListener('input', renderD);

@@ -76,12 +76,12 @@ def _event_identity(event: dict[str, Any]) -> tuple[str, str, str, str]:
 
 def select_visible_events(
     events: Iterable[dict[str, Any]],
-    limit: int = 120,
+    limit: int | None = 120,
     minimum_per_group: int = 6,
 ) -> list[dict[str, Any]]:
     """Return a recent, relevant list without letting one source hide the rest."""
 
-    if limit <= 0:
+    if limit is not None and limit <= 0:
         return []
 
     ranked = sorted(
@@ -98,6 +98,14 @@ def select_visible_events(
 
     selected: list[dict[str, Any]] = []
     selected_ids: set[tuple[str, str, str, str]] = set()
+
+    if limit is None:
+        for event in ranked:
+            identity = _event_identity(event)
+            if identity not in selected_ids:
+                selected.append(event)
+                selected_ids.add(identity)
+        return selected
 
     for group in SOURCE_GROUP_ORDER:
         group_events = (

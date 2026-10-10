@@ -1,13 +1,22 @@
 from __future__ import annotations
 
 import time
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from regintel.application import refresh
 
 
 class RefreshCacheInvalidationTests(unittest.TestCase):
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        history = patch("regintel.application.event_history.EVENT_HISTORY_FILE", Path(directory.name) / "history.json")
+        history.start()
+        self.addCleanup(history.stop)
 
     def test_stale_parser_cache_is_refetched_without_http_validators(self) -> None:
         now = time.time()

@@ -41,7 +41,8 @@ function notifyAIAnalysisState(
 }
 
 async function ensureAIAnalysis(
-    event
+    event,
+    force = false
 ){
 
     if(
@@ -55,10 +56,31 @@ async function ensureAIAnalysis(
 
 
     if(
+        !force
+        &&
         event.analysis
         ?.analysis_mode
         ===
         'AI 深度分析'
+    ){
+
+        return;
+    }
+
+
+    /* A known unreadable source cannot benefit from another automatic request. */
+    if(
+        !force && event.source_key !== 'fsc_announcement' && /未提供可解析的/.test(
+            event.analysis?.analysis_note || ''
+        )
+    ){
+
+        return;
+    }
+
+
+    if(
+        !force && state.aiFailed.has(event.id)
     ){
 
         return;
@@ -70,9 +92,9 @@ async function ensureAIAnalysis(
             event.id
         )
         ||
-        state.aiRequested.has(
+        (!force && state.aiRequested.has(
             event.id
-        )
+        ))
     ){
 
         return;
@@ -132,7 +154,7 @@ async function ensureAIAnalysis(
                     encodeURIComponent(
                         event.id
                     )
-                }`,
+                }${force ? '&force=1' : ''}`,
 
                 {
                     cache:'no-store'
@@ -153,6 +175,10 @@ async function ensureAIAnalysis(
         const data =
             await response.json();
 
+        const keepPreviousAnalysis = force
+            && event.analysis?.analysis_mode === 'AI 深度分析'
+            && data.analysis?.analysis_mode !== 'AI 深度分析';
+
 
         if(
             data.analysis
@@ -160,10 +186,14 @@ async function ensureAIAnalysis(
             typeof data.analysis
             ===
             'object'
+            && !keepPreviousAnalysis
         ){
 
             event.analysis =
                 data.analysis;
+            if(data.analysis.source_title) event.title = data.analysis.source_title;
+            if(data.analysis.source_url) event.url = data.analysis.source_url;
+            if(data.analysis.source_description) event.description = data.analysis.source_description;
         }
 
 
@@ -183,7 +213,7 @@ async function ensureAIAnalysis(
 
 
         if(
-            event.analysis
+            !keepPreviousAnalysis && event.analysis
             ?.analysis_mode
             ===
             'AI 深度分析'
@@ -196,25 +226,9 @@ async function ensureAIAnalysis(
         }
 
         else{
-
-            /* Allow an explicit retry when the model returned only fallback data. */
-            state.aiRequested.delete(
-                event.id
-            );
-
+            /* Wait for an explicit retry or refresh before requesting again. */
+            state.aiRequested.delete(event.id);
             state.aiFailed.add(event.id);
-        }
-
-
-        if(
-            event.id
-            ===
-            state.selected
-        ){
-
-            renderDetail(
-                false
-            );
         }
 
 
@@ -224,10 +238,7 @@ async function ensureAIAnalysis(
 
     catch(error){
 
-        state.aiRequested.delete(
-            event.id
-        );
-
+        state.aiRequested.delete(event.id);
         state.aiFailed.add(event.id);
 
         console.error(

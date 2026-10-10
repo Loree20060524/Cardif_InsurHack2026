@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import time
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from regintel.application import event_analysis, refresh
@@ -11,6 +13,13 @@ from regintel.domain.law_changes import detect_law_changes, merge_recent_law_sig
 
 
 class BaselineRecoveryTests(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        history = patch("regintel.application.event_history.EVENT_HISTORY_FILE", Path(directory.name) / "history.json")
+        history.start()
+        self.addCleanup(history.stop)
+
     def test_placeholder_announcement_ignores_cached_deep_analysis(self) -> None:
         event = {
             "id": "announcement-1",

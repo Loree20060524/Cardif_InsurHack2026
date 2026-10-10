@@ -92,12 +92,8 @@ function renderTicker(){
             button.onclick =
                 () => {
 
-                    state.selected =
-                        button.dataset.tickerId;
-
-
+                    state.selected = button.dataset.tickerId;
                     renderList();
-
                     renderDetail();
 
 
@@ -240,6 +236,30 @@ function renderAdvancedFilters(){
         .join('');
 
 
+    $('riskFilterOptions').innerHTML =
+        RISK_LEVEL_FILTER_OPTIONS
+        .map(
+            value =>
+                advancedFilterOption(
+                    value,
+                    'riskLevels'
+                )
+        )
+        .join('');
+
+
+    $('importanceFilterOptions').innerHTML =
+        IMPORTANCE_FILTER_OPTIONS
+        .map(
+            value =>
+                advancedFilterOption(
+                    value,
+                    'importanceLevels'
+                )
+        )
+        .join('');
+
+
     document
     .querySelectorAll(
         '[data-advanced-filter-group]'
@@ -308,6 +328,8 @@ function clearAdvancedFilterDraft(){
     state.filterDraft = {
         types:new Set(),
         departments:new Set(),
+        riskLevels:new Set(),
+        importanceLevels:new Set(),
     };
 
 
@@ -316,6 +338,8 @@ function clearAdvancedFilterDraft(){
 
 
 function applyAdvancedFilterDraft(){
+
+    state.pagination.intel.page = 1;
 
     state.filters =
         copyAdvancedFilters(
@@ -359,6 +383,16 @@ function applyAdvancedFilterDraft(){
    Event List
 ===================================================== */
 
+function ledgerEvents(){
+    return filteredEvents()
+        .filter(event => state.sourceTypeFilter === '全部' || sourceType(event) === state.sourceTypeFilter)
+        .slice()
+        .sort((a, b) => {
+            const dateValue = event => new Date(event.published_at || event.detected_at || 0).getTime() || 0;
+            return dateValue(b) - dateValue(a);
+        });
+}
+
 function renderList(){
 
     const sourceCounts = new Map();
@@ -385,18 +419,14 @@ function renderList(){
     $('sourceTypeList').querySelectorAll('[data-source-type]').forEach(button => {
         button.onclick = () => {
             state.sourceTypeFilter = button.dataset.sourceType;
+            state.pagination.intel.page = 1;
             renderList();
         };
     });
 
-    const allFiltered = filteredEvents();
-    const list = allFiltered
-        .filter(event => state.sourceTypeFilter === '全部' || sourceType(event) === state.sourceTypeFilter)
-        .slice()
-        .sort((a, b) => {
-            const dateValue = event => event.published_at || event.detected_at || '';
-            return new Date(dateValue(b)).getTime() - new Date(dateValue(a)).getTime();
-        });
+    const list = ledgerEvents();
+    const page = pageWindow('intel', list);
+    renderPagination('intel', list, renderList);
 
     $('ledgerResultCount').textContent = `共 ${list.length} 筆`;
     $('ledgerStatus').textContent = state.lastSync
@@ -420,14 +450,14 @@ function renderList(){
     }
 
     const previousSelected = state.selected;
-    if(!list.some(event => event.id === state.selected)){
-        state.selected = list[0].id;
+    if(!page.items.some(event => event.id === state.selected)){
+        state.selected = page.items[0].id;
     }
 
 
     $('eventList').innerHTML =
 
-        list
+        page.items
         .map(
 
             event => `
@@ -484,14 +514,14 @@ function renderList(){
                 () => {
 
 
-                    state.selected =
-                        button.dataset.id.trim();
-
-
+                    state.selected = button.dataset.id.trim();
                     renderList();
-
-
                     renderDetail();
+                    if(typeof window !== 'undefined' && window.matchMedia('(max-width:900px)').matches){
+                        const detail = $('eventDetail');
+                        detail.focus({preventScroll:true});
+                        detail.scrollIntoView({block:'start'});
+                    }
                 };
         }
     );

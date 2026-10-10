@@ -13,6 +13,7 @@ from ..config import (
     AI_PROMPT_VERSION,
     AI_PROVIDER_LABEL,
     OLLAMA_MODEL,
+    OLLAMA_THINK,
 )
 from ..domain.rules import AI_ALLOWED_DEPARTMENTS
 from ..domain.text import clean_text, now_iso, unique_items
@@ -121,6 +122,8 @@ def ai_event_cache_key(
 
     material = {
 
+        "thinking": OLLAMA_THINK,
+
         "prompt_version":
             AI_PROMPT_VERSION,
 
@@ -142,6 +145,12 @@ def ai_event_cache_key(
         "description":
             event.get(
                 "description",
+                ""
+            ),
+
+        "analysis_source_text":
+            event.get(
+                "analysis_source_text",
                 ""
             ),
 
@@ -509,6 +518,24 @@ def sanitize_ai_analysis(
         )
 
 
+    base_analysis_note = (
+        (
+            "AI 依據目前取得的官方來源內容進行初步監理影響分析；"
+            "最終法規適用性與法律效果仍應由公司專業人員確認。"
+        )
+        if ai_is_substantive
+        else
+        (
+            "AI 回傳內容不足以形成深度分析，已保留規則式備援結果；"
+            "請以官方原文及人工覆核為準。"
+        )
+    )
+
+    rating_note = clean_text(fallback.get("rating_note", ""))
+    if rating_note:
+        base_analysis_note += f" {rating_note}"
+
+
     return {
 
         "summary":
@@ -581,21 +608,7 @@ def sanitize_ai_analysis(
             management_summary,
 
         "analysis_note":
-            (
-                (
-                    "AI 依據目前取得的官方來源"
-                    "內容進行初步監理影響分析；"
-                    "最終法規適用性與法律效果"
-                    "仍應由公司專業人員確認。"
-                )
-                if ai_is_substantive
-                else
-                (
-                    "AI 回傳內容不足以形成深度分析，"
-                    "已保留規則式備援結果；"
-                    "請以官方原文及人工覆核為準。"
-                )
-            ),
+            base_analysis_note,
 
         "analysis_mode":
             (

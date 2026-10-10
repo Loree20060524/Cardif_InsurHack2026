@@ -13,6 +13,15 @@ venv/
 regintel_ai_cache_v*.json
 regintel_cache_v*.json
 regintel_source_store_v*.json
+regintel_event_history_v*.json
+regintel_law_versions_v*.json
+
+# Local review artifacts, screenshots, backups, and temporary clones
+tmp/
+*.log
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Editor and operating-system files
 .idea/

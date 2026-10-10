@@ -15,6 +15,7 @@ from pathlib import Path
 # =========================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+APP_VERSION = "10.20"
 
 CACHE_FILE = (
     BASE_DIR
@@ -133,6 +134,13 @@ OLLAMA_TIMEOUT = int(
 )
 
 
+_thinking_setting = os.environ.get("OLLAMA_THINK", "false").strip().lower()
+if _thinking_setting not in {"false", "true", "auto"}:
+    raise ValueError("OLLAMA_THINK 必須是 false、true 或 auto。")
+OLLAMA_THINK = {"false": False, "true": True, "auto": None}[_thinking_setting]
+OLLAMA_KEEP_ALIVE = os.environ.get("OLLAMA_KEEP_ALIVE", "10m").strip()
+
+
 AI_MAX_INPUT_CHARS = int(
     os.environ.get(
         "AI_MAX_INPUT_CHARS",
@@ -142,8 +150,11 @@ AI_MAX_INPUT_CHARS = int(
 
 
 AI_PROMPT_VERSION = (
-    "regintel-v10.8-competition-departments"
+    "regintel-v10.15-official-announcement-content"
 )
+
+EVENT_HISTORY_FILE = BASE_DIR / "regintel_event_history_v10.json"
+LAW_VERSIONS_FILE = BASE_DIR / "regintel_law_versions_v1.json"
 
 
 AI_PROVIDER_LABEL = (

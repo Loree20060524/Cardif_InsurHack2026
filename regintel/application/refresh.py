@@ -29,6 +29,8 @@ from ..infrastructure.http_client import classify_error, fetch_url, robots_allow
 from ..infrastructure.json_store import atomic_write_json, load_json_file
 from ..infrastructure.parsers import SOURCE_PARSER_VERSION, parse_source
 from ..source_catalog import SOURCES, SOURCE_MIN_INTERVAL_SECONDS
+from .event_history import history_metadata, remember_events
+from ..infrastructure.law_versions import capture_feed_versions
 
 
 _cache_lock = threading.Lock()
@@ -40,6 +42,11 @@ _mem_cache: dict[str, Any] = {
 }
 
 _last_manual_refresh_ts = 0.0
+
+
+def invalidate_refresh_cache():
+    with _cache_lock:
+        _mem_cache["timestamp"] = 0.0
 
 
 # =========================================================
@@ -695,6 +702,12 @@ def refresh_data(
                         "law_xml"
                     ):
 
+                        try:
+                            capture_feed_versions(source_key, raw)
+                        except (OSError, ValueError):
+                            # Public version storage must not interrupt the existing feed.
+                            pass
+
                         has_baseline = bool(
 
                             last_success_ts
@@ -1012,7 +1025,7 @@ def refresh_data(
                         ),
                         key=date_sort_key,
                         reverse=True,
-                    )[:30]
+                    )
                 )
 
         all_events = law_records + all_events
@@ -1063,8 +1076,12 @@ def refresh_data(
 
         visible = select_visible_events(
             events,
-            limit=120,
+            limit=None,
         )
+
+        visible = remember_events(visible)
+        for event in visible:
+            event["analysis"] = rule_based_analyze_event(event)
 
 
         last_success_ts = max(
@@ -1096,6 +1113,8 @@ def refresh_data(
 
 
         payload = {
+
+            "history": history_metadata(),
 
             "timestamp":
                 now,

@@ -16,6 +16,7 @@ function renderEventList(event) {
         eventList,
         eventDetail,
         sourceTypeList,
+        eventPagination: { innerHTML: '', querySelector: () => ({}) },
         ledgerResultCount: { textContent: '' },
         ledgerStatus: { textContent: '' },
     };
@@ -29,7 +30,7 @@ function renderEventList(event) {
     });
     const root = path.resolve(__dirname, '..');
 
-    for (const file of ['assets/js/core.js', 'assets/js/dashboard.js']) {
+    for (const file of ['assets/js/core.js', 'assets/js/pagination.js', 'assets/js/dashboard.js']) {
         vm.runInContext(
             fs.readFileSync(path.join(root, file), 'utf8'),
             context,

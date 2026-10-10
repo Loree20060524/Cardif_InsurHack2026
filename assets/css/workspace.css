@@ -158,7 +158,11 @@
             calc(100vw - 130px)
         );
 
-    overflow:hidden;
+    max-height:calc(100vh - 80px);
+
+    overflow-x:hidden;
+
+    overflow-y:auto;
 
     border:
         1px solid
@@ -369,6 +373,12 @@ span::before{
         var(--line);
 
     background:#f8fbfa;
+
+    position:sticky;
+
+    bottom:0;
+
+    z-index:1;
 }
 
 

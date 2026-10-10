@@ -1,0 +1,2 @@
+# Text extraction for public announcement PDF attachments.
+pypdf>=5.0

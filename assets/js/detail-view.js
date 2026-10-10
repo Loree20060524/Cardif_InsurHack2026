@@ -43,6 +43,8 @@ function renderDetail(
         ===
         'AI 深度分析';
 
+    const hasLawComparison = analysis.content_source === '官方條文前後對照';
+
 
     const aiIsLoading =
         state.aiLoading.has(
@@ -58,6 +60,19 @@ function renderDetail(
         /未提供可解析的/.test(
             analysis.analysis_note || ''
         );
+
+    const showAnalysisValues =
+        isAI || aiFailed || aiHasInsufficientContent;
+
+    const unresolvedAiFields =
+        isAI
+        ? [
+            ['風險程度', analysis.risk_level],
+            ['重要性', analysis.importance],
+        ]
+            .filter(([, value]) => !value || value === '待確認')
+            .map(([label]) => label)
+        : [];
 
 
     const regulatoryPoints =
@@ -178,78 +193,10 @@ function renderDetail(
                 }
 
 
-                <span
-
-                    id="aiAnalysisStatus"
-
-                    class="
-                        workflow
-                        ${
-                            isAI
-
-                            ?
-
-                            'ai'
-
-                            :
-
-                            (
-                                aiIsLoading
-
-                                ?
-
-                                'ai-loading'
-
-                                :
-
-                                ''
-                            )
-                        }
-                    "
-                >
-
-                    ${
-                        isAI
-
-                        ?
-
-                        'AI 深度分析'
-
-                        :
-
-                        (
-                            state.ai.enabled
-
-                            ?
-
-                            (
-                                aiIsLoading
-
-                                ?
-
-                                'AI 分析中…'
-
-                                :
-
-                                (
-                                    aiFailed
-
-                                    ?
-
-                                    'AI 分析未完成'
-
-                                    :
-
-                                    'AI 待分析'
-                                )
-                            )
-
-                            :
-
-                            '規則備援'
-                        )
-                    }
-
+                <span id="aiAnalysisStatus" role="status" class="workflow ${aiIsLoading ? 'ai-loading' : (isAI ? 'ai' : '')}">
+                    ${aiIsLoading ? (isAI ? '重新分析中…' : 'AI 分析中…')
+                        : (aiFailed ? (isAI ? '重新分析未完成，保留原結果' : 'AI 分析未完成')
+                            : (isAI ? 'AI 深度分析' : (state.ai.enabled ? (aiHasInsufficientContent ? 'AI 分析未完成' : 'AI 待分析') : '規則備援')))}
                 </span>
 
 
@@ -265,31 +212,9 @@ function renderDetail(
             </h2>
 
 
-            <p>
-
-                ${esc(
-                    formatEventDate(
-                        event
-                    )
-                )}
-
-                ·
-
-                ${esc(
-                    analysis.analysis_note
-
-                    ||
-
-                    (
-                        '系統提供初步整理，'
-                        +
-                        '最終適用性仍需由'
-                        +
-                        '相關單位確認。'
-                    )
-                )}
-
-            </p>
+            <p>${esc(formatEventDate(event))} · ${esc(event.source || '官方資料')}</p>
+            ${!isAI && analysis.analysis_note ? `<p class="detail-source-note">${esc(analysis.analysis_note)}</p>` : ''}
+            ${unresolvedAiFields.length ? `<p class="detail-source-note">${esc(unresolvedAiFields.join('、'))}尚無法由目前來源確認。</p>` : ''}
 
 
             ${
@@ -310,7 +235,7 @@ function renderDetail(
                         <b>
 
                             ${esc(
-                                isAI
+                                showAnalysisValues
                                 ? (analysis.risk_level || '待確認')
                                 : (aiIsLoading ? '分析中…' : '待 AI 分析')
                             )}
@@ -329,7 +254,7 @@ function renderDetail(
                         <b>
 
                             ${esc(
-                                isAI
+                                showAnalysisValues
                                 ? (analysis.importance || '待確認')
                                 : (aiIsLoading ? '分析中…' : '待 AI 分析')
                             )}
@@ -348,7 +273,7 @@ function renderDetail(
                         <b>
 
                                 ${esc(
-                                    isAI
+                                    showAnalysisValues
                                     ? departmentLabel(analysis.responsible_department || '待確認')
                                     : (aiIsLoading ? '分析中…' : '待 AI 分析')
                                 )}
@@ -380,11 +305,11 @@ function renderDetail(
 
                     ?
 
-                    'AI 重點摘要'
+                    (hasLawComparison ? '條文差異摘要' : '重點摘要')
 
                     :
 
-                    '發生什麼？'
+                    '內容摘要'
                 }
 
             </h3>
@@ -430,20 +355,16 @@ function renderDetail(
         </div>
 
 
-        <div class="block">
+        ${renderLawComparisonSection(event)}
 
-
-            <h3>
-                監理影響圖
-            </h3>
-
-
+        <details class="block detail-impact-overview">
+            <summary>查看影響關聯圖</summary>
             ${renderImpactChain(
                 analysis
             )}
 
 
-        </div>
+        </details>
 
 
         ${
@@ -456,7 +377,7 @@ function renderDetail(
 
 
                 <h3>
-                    ${isAI ? 'AI 判讀的監理重點' : '初步監理重點'}
+                    ${hasLawComparison ? '已確認的文字差異' : (isAI ? '監理重點' : '初步監理重點')}
                 </h3>
 
 
@@ -493,7 +414,7 @@ function renderDetail(
 
 
             <h3>
-                哪些部門可能受影響？
+                ${hasLawComparison ? '可能受影響部門（AI 推論）' : '受影響部門'}
             </h3>
 
 
@@ -557,7 +478,7 @@ function renderDetail(
 
 
             <h3>
-                可能受影響流程
+                ${hasLawComparison ? '可能受影響流程（AI 推論）' : '可能受影響流程'}
             </h3>
 
 
@@ -573,7 +494,7 @@ function renderDetail(
 
 
             <h3>
-                需要注意的事項
+                ${hasLawComparison ? '注意事項（AI 推論）' : '注意事項'}
             </h3>
 
 
@@ -622,7 +543,7 @@ function renderDetail(
 
 
             <h3>
-                建議因應
+                ${hasLawComparison ? '建議因應（AI 推論）' : '建議因應'}
             </h3>
 
 
@@ -667,7 +588,9 @@ function renderDetail(
         </div>
 
 
-        <div class="ai-note">
+        <${isAI ? 'details' : 'div'} class="ai-note">
+            ${isAI ? '<summary>分析說明與模型資訊</summary>' : ''}
+            ${isAI && analysis.analysis_note ? `<p>${esc(analysis.analysis_note)}</p>` : ''}
 
 
             ${
@@ -710,11 +633,15 @@ function renderDetail(
                         :
 
                         (
-                            aiFailed
+                            (aiFailed || aiHasInsufficientContent)
 
                             ?
 
-                            'AI 深度分析尚未完成；以下內容為規則備援結果，請人工覆核。'
+                            (
+                                aiHasInsufficientContent
+                                ? '官方來源未提供可解析內容，以下顯示規則備援結果；取得完整原文後才能進行 AI 深度分析。'
+                                : 'AI 深度分析尚未完成；以下內容為規則備援結果，請人工覆核。'
+                            )
 
                             :
 
@@ -729,7 +656,7 @@ function renderDetail(
             }
 
 
-        </div>
+        </${isAI ? 'details' : 'div'}>
 
 
         ${
@@ -745,7 +672,7 @@ function renderDetail(
                     : (
                         aiHasInsufficientContent
                         ? '<span>來源內文不足，暫無法進行可靠的深度分析。</span>'
-                        : `<button type="button" class="d-detail-retry" id="retryAI">${aiFailed ? '重試 AI 分析' : '進行 AI 深度分析'}</button>`
+                        : `<button type="button" class="d-detail-retry" id="retryAI">${aiFailed ? '重試 AI 分析' : (isAI ? '重新分析' : '進行 AI 分析')}</button>`
                     )
                 }
             </div>
@@ -758,6 +685,7 @@ function renderDetail(
 
 
         <div class="detail-actions">
+
 
 
             <button
@@ -797,6 +725,7 @@ function renderDetail(
             );
 
 
+
     $('copyLink').onclick =
         async () => {
 
@@ -829,11 +758,13 @@ function renderDetail(
         retryAIButton.onclick = () => {
             state.aiFailed.delete(event.id);
             state.aiRequested.delete(event.id);
-            ensureAIAnalysis(event);
+            ensureAIAnalysis(event, true);
             renderDetail(false);
         };
     }
 
+
+    bindLawComparison(event);
 
     if(triggerAI){
 

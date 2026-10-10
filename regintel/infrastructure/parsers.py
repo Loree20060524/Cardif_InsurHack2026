@@ -13,7 +13,7 @@ from ..domain.text import clean_text, decode_bytes, local_tag, parse_date
 from ..source_catalog import SOURCES
 
 
-SOURCE_PARSER_VERSION = "regintel-source-parser-v2-law-parent-dates"
+SOURCE_PARSER_VERSION = "regintel-source-parser-v3-announcement-detail-links"
 
 
 # =========================================================
@@ -87,6 +87,8 @@ def normalize_event(
             date
         )
     )
+
+    link = html.unescape(link or "")
 
 
     return {
@@ -646,6 +648,11 @@ def parse_announcement_html(
             raw_title
         )
 
+        opening_tag = match.group(0).split(">", 1)[0]
+        title_attribute = re.search(r"\btitle=[\"'](.*?)[\"']", opening_tag, re.I | re.S)
+        if title_attribute:
+            title = clean_text(title_attribute.group(1)) or title
+
 
         if (
             not title
@@ -704,13 +711,22 @@ def parse_announcement_html(
         link = (
             urllib.parse.urljoin(
 
-                "https://www.fsc.gov.tw/",
+                SOURCES[source_key]["url"],
 
                 html.unescape(
                     href
                 )
             )
         )
+
+        parsed_link = urllib.parse.urlparse(link)
+        link_params = urllib.parse.parse_qs(parsed_link.query)
+        if (
+            link_params.get("mcustomize") not in (["multimessage_view.jsp"], ["multimessages_view.jsp"])
+            or parsed_link.hostname != urllib.parse.urlparse(SOURCES[source_key]["url"]).hostname
+            or not date
+        ):
+            continue
 
 
         output.append(
@@ -723,24 +739,13 @@ def parse_announcement_html(
 
                 link,
 
-                (
-                    "金管會重要公告。"
-                    "請開啟官方原始來源"
-                    "確認完整內容。"
-                ),
+                f"{SOURCES[source_key]['label']}。請開啟官方原始來源確認完整內容。",
 
                 date,
 
-                "重要公告",
+                {"fsc_announcement": "重要公告", "fsc_penalty": "裁罰案件", "reg_news": "新聞稿"}[source_key],
             )
         )
-
-
-        if len(
-            output
-        ) >= 80:
-
-            break
 
 
     return output

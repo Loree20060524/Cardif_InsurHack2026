@@ -197,33 +197,110 @@ test('D preview refreshes its selected dossier when AI analysis completes', asyn
 });
 
 
+test('completed AI analysis can be explicitly rerun after prompt changes', async () => {
+    const { context, event } = bootPreview();
+    let requestCount = 0;
+    event.analysis.analysis_mode = 'AI 深度分析';
+    context.fetch = async () => {
+        requestCount += 1;
+        return {
+            ok: true,
+            json: async () => ({
+                ai_used: true,
+                analysis: {
+                    ...event.analysis,
+                    summary: '重新分析後摘要',
+                },
+            }),
+        };
+    };
+
+    await vm.runInContext('ensureAIAnalysis(state.events[0])', context);
+    assert.equal(requestCount, 0, 'completed analysis should be reused by default');
+
+    await vm.runInContext('ensureAIAnalysis(state.events[0], true)', context);
+    assert.equal(requestCount, 1, 'explicit rerun should bypass the completed result');
+    assert.equal(event.analysis.summary, '重新分析後摘要');
+});
+
+test('explicit rerun after a successful request reaches the server and bypasses its cache', async () => {
+    const { context, event } = bootPreview();
+    const requests = [];
+    context.fetch = async url => {
+        requests.push(url);
+        return {ok:true, json:async () => ({ai_used:true, analysis:{...event.analysis, analysis_mode:'AI 深度分析'}})};
+    };
+    await vm.runInContext('ensureAIAnalysis(state.events[0])', context);
+    await vm.runInContext('ensureAIAnalysis(state.events[0])', context);
+    await vm.runInContext('ensureAIAnalysis(state.events[0], true)', context);
+    assert.deepEqual(requests, ['/api/analyze?id=event-1', '/api/analyze?id=event-1&force=1']);
+});
+
+test('a force request cannot start a second analysis while the first is pending', async () => {
+    const { context } = bootPreview();
+    let finish;
+    let requests = 0;
+    context.fetch = () => {
+        requests += 1;
+        return new Promise(resolve => {finish = resolve;});
+    };
+    const first = vm.runInContext('ensureAIAnalysis(state.events[0])', context);
+    await vm.runInContext('ensureAIAnalysis(state.events[0], true)', context);
+    assert.equal(requests, 1);
+    finish({ok:true, json:async () => ({ai_used:true, analysis:{analysis_mode:'AI 深度分析'}})});
+    await first;
+});
+
+test('a failed forced generation keeps the completed result and marks retry as failed', async () => {
+    const { context, event } = bootPreview();
+    event.analysis = {...event.analysis, analysis_mode:'AI 深度分析', summary:'先前完成的摘要'};
+    context.fetch = async () => ({ok:true, json:async () => ({ai_used:false,
+        analysis:{analysis_mode:'規則備援', summary:'模型失敗後的備援內容'}})});
+    await vm.runInContext('ensureAIAnalysis(state.events[0], true)', context);
+    assert.equal(event.analysis.summary, '先前完成的摘要');
+    assert.equal(event.analysis.analysis_mode, 'AI 深度分析');
+    assert.equal(vm.runInContext('state.aiFailed.has(state.events[0].id)', context), true);
+    assert.equal(vm.runInContext('state.aiRequested.has(state.events[0].id)', context), false);
+    assert.equal(vm.runInContext('state.aiLoading.has(state.events[0].id)', context), false);
+});
+
+
 test('D preview offers a working retry when AI returns rule fallback', async () => {
     const { context, dDetail, event } = bootPreview();
+    let requestCount = 0;
 
-    context.fetch = async () => ({
-        ok: true,
-        json: async () => ({
-            ai_used: false,
-            message: 'model unavailable',
-            analysis: event.analysis,
-        }),
-    });
+    context.fetch = async () => {
+        requestCount += 1;
+        return {
+            ok: true,
+            json: async () => ({
+                ai_used: false,
+                message: 'model unavailable',
+                analysis: event.analysis,
+            }),
+        };
+    };
     await vm.runInContext('ensureAIAnalysis(state.events[0])', context);
 
     assert.match(dDetail.innerHTML, /重試 AI 分析/);
     assert.equal(vm.runInContext('state.aiRequested.has("event-1")', context), false);
+    await vm.runInContext('ensureAIAnalysis(state.events[0])', context);
+    assert.equal(requestCount, 1, 'failed analysis should not retry on a later render');
 
-    context.fetch = async () => ({
-        ok: true,
-        json: async () => ({
-            ai_used: true,
-            analysis: {
-                ...event.analysis,
-                analysis_mode: 'AI 深度分析',
-                summary: '重試後完成的 AI 摘要',
-            },
-        }),
-    });
+    context.fetch = async () => {
+        requestCount += 1;
+        return {
+            ok: true,
+            json: async () => ({
+                ai_used: true,
+                analysis: {
+                    ...event.analysis,
+                    analysis_mode: 'AI 深度分析',
+                    summary: '重試後完成的 AI 摘要',
+                },
+            }),
+        };
+    };
     const analyzeButton = { dataset: { dAnalyze: event.id } };
     dDetail.listeners.click({
         target: {
@@ -232,6 +309,7 @@ test('D preview offers a working retry when AI returns rule fallback', async () 
     });
     await new Promise(resolve => setImmediate(resolve));
 
+    assert.equal(requestCount, 2);
     assert.match(dDetail.innerHTML, /重試後完成的 AI 摘要/);
     assert.doesNotMatch(dDetail.innerHTML, /重試 AI 分析/);
 });

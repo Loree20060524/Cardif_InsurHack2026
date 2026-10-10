@@ -697,3 +697,28 @@ def rule_based_analyze_event(
         "ai_provider":
             "",
     }
+
+
+def apply_regulatory_amendment_triage(
+    event: dict[str, Any],
+    analysis: dict[str, Any],
+) -> dict[str, Any]:
+    """Provide a conservative initial rating for substantive rule amendments.
+
+    This is a triage default, not a legal conclusion. Specific AI ratings take
+    precedence; the fallback is used only when the model returns a placeholder.
+    """
+    description = clean_text(event.get("description", ""))
+    if (
+        event.get("category") == "法規命令"
+        and event.get("change_status") == "異動"
+        and len(description) >= 40
+    ):
+        analysis = dict(analysis)
+        analysis["risk_level"] = "中"
+        analysis["importance"] = "重要"
+        analysis["rating_note"] = (
+            "風險與重要性採法規異動的初步分級；"
+            "實際影響仍須比對修正條文及適用範圍。"
+        )
+    return analysis

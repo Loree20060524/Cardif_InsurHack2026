@@ -1,3 +1,31 @@
+/* Source selection for management summaries. */
+
+.management-selection-search{display:flex;gap:10px;margin:14px 0;}
+.management-selection-search input{flex:1;min-width:0;}
+.management-selection-search input,
+.management-selection-search select{border:1px solid var(--line);border-radius:8px;background:#fff;padding:10px 12px;font:inherit;font-size:12px;color:var(--text);}
+.management-selection-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+.management-selection-toolbar > span{font-size:12px;font-weight:700;color:var(--muted);}
+.management-selection-toolbar > div{display:flex;gap:8px;}
+.management-selection-toolbar .btn{padding:7px 10px;font-size:12px;}
+.management-selection-list{max-height:440px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;}
+.management-selection-item{display:flex;align-items:flex-start;gap:12px;padding:14px;cursor:pointer;background:#fff;}
+.management-selection-item + .management-selection-item{border-top:1px solid var(--line);}
+.management-selection-item:hover{background:#f8fbfa;}
+.management-selection-item.selected{background:var(--soft);}
+.management-selection-item input{flex:0 0 auto;width:18px;height:18px;margin:2px 0 0;accent-color:var(--brand);}
+.management-selection-copy{min-width:0;}
+.management-selection-copy strong{display:block;font-size:13px;line-height:1.6;overflow-wrap:anywhere;}
+.management-selection-copy small{display:block;margin-top:5px;color:var(--muted);font-size:11px;line-height:1.7;}
+.management-selection-hint,.management-report-scope{color:var(--muted);font-size:12px;line-height:1.7;}
+.management-report-sources summary{cursor:pointer;font-weight:800;font-size:13px;}
+.management-report-sources ol{padding-left:22px;max-height:340px;overflow-y:auto;}
+.management-report-sources li{margin:10px 0;line-height:1.7;}
+.management-report-sources a{color:var(--brand);overflow-wrap:anywhere;}
+.management-report-sources small{display:block;color:var(--muted);}
+#managementView button:disabled{opacity:.5;cursor:default;}
+@media(max-width:600px){.management-selection-search{flex-direction:column;}.management-selection-toolbar > div{width:100%;}.management-selection-toolbar .btn{flex:1;}}
+
 /* =====================================================
    AI Management Report
 ===================================================== */
