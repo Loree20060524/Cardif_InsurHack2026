@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import ssl
+import tempfile
 from pathlib import Path
 
 
@@ -17,20 +18,30 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 APP_VERSION = "10.20"
 
+# Keep deployed data on an attached volume; local runs keep their existing files.
+_data_directory = os.environ.get("REGINTEL_DATA_DIR", "").strip()
+IS_VERCEL = os.environ.get("VERCEL") == "1"
+DATA_DIR = (
+    (BASE_DIR / Path(_data_directory).expanduser()).resolve() if _data_directory
+    else Path(tempfile.gettempdir()) / "regintel" if IS_VERCEL
+    else BASE_DIR
+)
+HOST = os.environ.get("REGINTEL_HOST", "127.0.0.1").strip() or "127.0.0.1"
+
 CACHE_FILE = (
-    BASE_DIR
+    DATA_DIR
     /
     "regintel_cache_v10.json"
 )
 
 SOURCE_STORE_FILE = (
-    BASE_DIR
+    DATA_DIR
     /
     "regintel_source_store_v10.json"
 )
 
 AI_CACHE_FILE = (
-    BASE_DIR
+    DATA_DIR
     /
     "regintel_ai_cache_v10.json"
 )
@@ -153,8 +164,8 @@ AI_PROMPT_VERSION = (
     "regintel-v10.15-official-announcement-content"
 )
 
-EVENT_HISTORY_FILE = BASE_DIR / "regintel_event_history_v10.json"
-LAW_VERSIONS_FILE = BASE_DIR / "regintel_law_versions_v1.json"
+EVENT_HISTORY_FILE = DATA_DIR / "regintel_event_history_v10.json"
+LAW_VERSIONS_FILE = DATA_DIR / "regintel_law_versions_v1.json"
 
 
 AI_PROVIDER_LABEL = (

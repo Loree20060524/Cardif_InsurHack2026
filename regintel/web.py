@@ -17,7 +17,7 @@ from .application.regulatory_qa import QABusyError, answer_regulatory_question
 from .application.refresh import invalidate_refresh_cache, refresh_data
 from .application.event_history import load_older_events
 from .application.law_comparison import get_law_comparisons
-from .config import AI_PROMPT_VERSION, AI_PROVIDER_LABEL, APP_VERSION, BASE_DIR, OLLAMA_MODEL, PORT
+from .config import AI_PROMPT_VERSION, AI_PROVIDER_LABEL, APP_VERSION, BASE_DIR, DATA_DIR, HOST, OLLAMA_MODEL, PORT
 from .domain.risk_analysis import rule_based_analyze_event
 from .domain.text import clean_text, now_iso
 from .infrastructure.ollama import preload_ollama, probe_ollama
@@ -564,13 +564,16 @@ class Handler(
 
 def main():
 
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    display_host = "127.0.0.1" if HOST == "0.0.0.0" else HOST
+
     try:
-        server = RegIntelHTTPServer(("127.0.0.1", PORT), Handler)
+        server = RegIntelHTTPServer((HOST, PORT), Handler)
     except OSError as exc:
         if exc.errno != errno.EADDRINUSE and getattr(exc, "winerror", None) != 10048:
             raise
         print(f"RegIntel 未啟動：連接埠 {PORT} 已有服務使用。")
-        print(f"若 RegIntel 已在執行，請直接開啟 http://127.0.0.1:{PORT}")
+        print(f"若 RegIntel 已在執行，請直接開啟 http://{display_host}:{PORT}")
         print("如需重新啟動，請先停止原本的 RegIntel 服務，再執行 server.py。")
         return 1
 
@@ -591,10 +594,12 @@ def main():
     print(
         (
             "開啟網址："
-            f"http://127.0.0.1:{PORT}"
+            f"http://{display_host}:{PORT}"
         )
     )
 
+    print(f"監聽位址：{HOST}:{PORT}")
+    print(f"資料目錄：{DATA_DIR}")
 
     print(
         (

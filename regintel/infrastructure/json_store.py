@@ -15,6 +15,8 @@ def atomic_write_json(
     ]
 ) -> None:
 
+    path.parent.mkdir(parents=True, exist_ok=True)
+
     temp = path.with_suffix(
         path.suffix
         +

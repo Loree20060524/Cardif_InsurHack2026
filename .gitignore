@@ -18,6 +18,9 @@ regintel_law_versions_v*.json
 
 # Local review artifacts, screenshots, backups, and temporary clones
 tmp/
+data/
+public/
+.vercel/
 *.log
 .pytest_cache/
 .coverage
