@@ -102,9 +102,9 @@ print(json.dumps({"provider": config.AI_PROVIDER, "model": config.AI_MODEL,
         cloud = self.run_python(code, VERCEL="1")
         self.assertEqual(local["provider"], "ollama")
         self.assertEqual(local["model"], local["ollama"])
-        self.assertEqual(cloud["provider"], "vercel_gateway")
-        self.assertEqual(cloud["model"], "alibaba/qwen-3-14b")
-        self.assertFalse(cloud["think"])
+        self.assertEqual(cloud["provider"], "gemini")
+        self.assertEqual(cloud["model"], "gemini-3.8-flash")
+        self.assertEqual(cloud["think"], "low")
         explicit = self.run_python(code, REGINTEL_AI_PROVIDER="vercel_gateway", REGINTEL_AI_MODEL="configured/model")
         self.assertEqual(explicit["model"], "configured/model")
 

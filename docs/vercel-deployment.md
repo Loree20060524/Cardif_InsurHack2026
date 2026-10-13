@@ -1,6 +1,6 @@
 # Vercel 部署與資料保存
 
-目標是個人電腦關機後，隊友仍能使用平台。正式網址為 https://cardif-insur-hack2026.vercel.app/ ，對應 `loree1/cardif-insur-hack2026` 與 GitHub 的 `main`。網站與 API 已驗證可開啟；Neon Free 資料庫 `regintel-db` 已由使用者建立並連接 Production。五份本機資料已遷移並以新連線逐份核對 SHA-256，正式站已確認讀取 Neon。雲端 AI 程式已接入 Gateway，帳號權限及生成結果仍須於新版部署後驗證。
+目標是個人電腦關機後，隊友仍能使用平台。正式網址為 https://cardif-insur-hack2026.vercel.app/ ，對應 `loree1/cardif-insur-hack2026` 與 GitHub 的 `main`。網站與 API 已驗證可開啟；Neon Free 資料庫 `regintel-db` 已由使用者建立並連接 Production。五份本機資料已遷移並以新連線逐份核對 SHA-256，正式站已確認讀取 Neon。雲端 AI 改為直接呼叫 Gemini API 的免綁卡方案；金鑰與生成結果仍須於新版部署後驗證。
 
 ## 已備妥的設定
 
@@ -44,13 +44,22 @@ python scripts/migrate_storage.py --env-file .env.database.local --verify
 
 Vercel Function 不會執行目前電腦上的 Ollama。完整問答、重新分析及管理摘要需要獨立的模型服務或雲端模型 API，並保留目前的結構化輸出和引用驗證。
 
-三個功能已共用模型介面：單筆分析、使用者選取範圍的管理摘要、附原文引用的監理問答。本機預設 `ollama`；Vercel 預設 `vercel_gateway`，模型為 `alibaba/qwen-3-14b`。可明確設定 `REGINTEL_AI_PROVIDER` 與 `REGINTEL_AI_MODEL` 切換，雲端不探測或預載本機 Ollama。原本的引用檢查、規則備援與 Neon 快取保留；雲端與本機模型快取分開，本機原有快取識別不變。
+三個功能已共用模型介面：單筆分析、使用者選取範圍的管理摘要、附原文引用的監理問答。本機預設 `ollama`；Vercel 預設 `gemini`，模型為 `gemini-3.8-flash`。可明確設定 `REGINTEL_AI_PROVIDER` 與 `REGINTEL_AI_MODEL` 切換，雲端不探測或預載本機 Ollama。原本的引用檢查、規則備援與 Neon 快取保留；不同供應商與模型的快取分開，本機原有快取識別不變。
 
-2026-10-13 已核對 [即時模型清單](https://ai-gateway.vercel.sh/v1/models) 與 [Qwen3-14B 官方頁](https://vercel.com/ai-gateway/models/qwen-3-14b)：支援結構化輸出，DeepInfra 的「Free AI Gateway Credit」為 Yes；當日輸入 $0.12／百萬 token、輸出 $0.24／百萬 token。這是可用免費額度支付的模型，並非永久零價格模型。Gateway 每月 $5 免費額度須完成付款方式驗證，且限適用模型；購買額度後轉為付費層並停止每月免費額度。程式不購買額度、不設定自動加值，也不自動改用其他模型。[額度規則](https://vercel.com/docs/ai-gateway/pricing)
+使用者已選擇不需綁卡的免費方案。2026-10-13 已核對 Google 的 [模型說明](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash)、[價格](https://ai.google.dev/gemini-api/docs/pricing)、[帳單規則](https://ai.google.dev/gemini-api/docs/billing) 及 [結構化輸出](https://ai.google.dev/gemini-api/docs/generate-content/structured-output)：Gemini 3.8 Flash 有 Free Tier 並支援 JSON Schema，新帳號可從免費層開始；升級付費須另連接帳單帳戶。免費請求次數與 token 配額依專案實際額度，超過上限會停止生成。免費層內容可能用於改善 Google 產品，適合本平台的公開監理資料，不應傳送公司機密或個資。
 
-部署執行時優先讀取 Vercel 的 `x-vercel-oidc-token` 請求標頭，放在請求專屬 ContextVar 並於結束時清除；不寫入共用環境變數，避免並行請求互相使用驗證值。建置與本機環境另支援 `VERCEL_OIDC_TOKEN`，也可使用僅存在 Vercel 伺服器環境的 `AI_GATEWAY_API_KEY`。不需供應商金鑰。帳號驗證、模型存取權與免費額度仍須實測；若 Vercel 未提供 OIDC，可在專案設定啟用，或由使用者在 Gateway 建立金鑰並直接存入 Production 環境變數，再重新部署。不要將金鑰貼入聊天或前端。[OIDC 執行期間的標頭](https://vercel.com/docs/oidc#in-vercel-functions)、[Gateway 驗證](https://vercel.com/docs/ai-gateway/authentication-and-byok/oidc)
+設定步驟：
 
-所有雲端請求使用嚴格 JSON Schema，回覆再經本機格式驗證，拒絕截斷、額外欄位與無效結果；關閉推理輸出以控制延遲，單次輸出預設上限 4096 token、逾時 180 秒。不自動重試生成，避免重複消耗。401／402／403／429 等情況以安全訊息說明，不回傳上游原始訊息、提示詞或驗證值。單筆分析仍可使用規則備援，但明確標示 `ai_used=false`；問答、管理摘要不冒充生成成功。
+1. 在 [Google AI Studio](https://aistudio.google.com/) 建立專案與 API 金鑰，確認 Billing Tier 為 **Free Tier**，不連接 Billing 帳戶、不升級付費。可為此平台另建一個未啟用帳單的專案，以免沿用已付費專案。
+2. 到 Vercel 的 `cardif-insur-hack2026` → **Environment Variables**，新增 `GEMINI_API_KEY`，值為該金鑰，選 **Production** 並儲存。真實金鑰不貼入聊天、不存入 Git、不放在前端。
+3. 若曾明確設定 `REGINTEL_AI_PROVIDER` 或 `REGINTEL_AI_MODEL`，分別改為 `gemini` 與 `gemini-3.8-flash`；未設定時使用上述預設值。
+4. 儲存後重新部署，檢查 `/api/health` 的 `ai_check`，再實際驗證單筆分析、管理摘要及問答引用。金鑰存在不代表實測成功；健康檢查不會消耗生成配額。
+
+模型請求使用 Google 官方 `generateContent` REST API，目前仍完整支援。金鑰只放 `x-goog-api-key` 標頭，不放在網址。請求以 `generationConfig.responseFormat.text` 傳送 JSON Schema、使用 low 推理深度並不要求推理文字；回覆再經程式驗證，拒絕截斷、封鎖、額外欄位與無效結果。單次輸出預設上限 4096 token、逾時 180 秒，可用 `REGINTEL_AI_MAX_TOKENS`／`REGINTEL_AI_TIMEOUT` 調整。不自動重試生成、不切到其他供應商、不啟用 Billing 或購買額度。[REST 參考](https://ai.google.dev/api/generate-content)、[推理深度](https://ai.google.dev/gemini-api/docs/thinking)
+
+401／402／403／429 等情況回報安全且可操作的訊息，不回傳上游原始訊息、提示詞或金鑰。單筆分析仍可使用規則備援，但明確標示 `ai_used=false`；問答、管理摘要不冒充生成成功。程式無法只憑 API 金鑰判定 Google 專案的帳單層級；不產生費用的前提是使用者所選專案維持 Free Tier。
+
+`vercel_gateway` 介面保留供日後明確選用，未被 Gemini 錯誤當成備援。先前已在線上確認 Vercel OIDC 可讀取，但 Loree 工作區的 Gateway 回傳 `customer_verification_required`；本次改用 Gemini，不要求完成該付款方式驗證。[Gateway 額度規則](https://vercel.com/docs/ai-gateway/pricing)
 
 ### 3. 實際部署與驗證
 
@@ -69,3 +78,5 @@ Vercel Function 不會執行目前電腦上的 Ollama。完整問答、重新分
 `tests/test_postgres_integration.py` 另提供真實資料庫測試，只有明確設定 `REGINTEL_TEST_DATABASE_URL` 才執行。測試使用隨機命名空間並僅清理自己的測試資料，驗證新實例讀取、交易失敗回滾、並行合併與 revision 更新。未設定測試連線時會標示 skipped，不可視為資料庫驗證通過。
 
 2026-10-13 雲端 AI 改動：121 項本機測試通過，4 項真實 PostgreSQL 測試本次未重跑；另完成最後錯誤處理、健康狀態與部署設定的 28 項針對性測試。靜態建置成功。上述測試使用模擬模型回覆，不代表雲端模型實測成功。
+
+2026-10-13 Gemini 接線：133 項 Python 測試中 129 項通過、4 項真實 PostgreSQL 測試本次未重跑。涵蓋 Gemini 金鑰隔離、JSON Schema、截斷與封鎖回覆、額度錯誤、模型路徑驗證及不切換到 Gateway；上述為模擬回覆測試，尚不代表 Gemini 線上已可生成。

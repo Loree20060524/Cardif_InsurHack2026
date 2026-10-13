@@ -55,7 +55,7 @@ class ModelClientTests(unittest.TestCase):
         self.assertEqual(body["response_format"]["json_schema"]["schema"], SCHEMA)
         self.assertTrue(body["response_format"]["json_schema"]["strict"])
         self.assertEqual(body["reasoning"], {"effort": "none"})
-        self.assertEqual(body["max_tokens"], client.AI_GATEWAY_MAX_TOKENS)
+        self.assertEqual(body["max_tokens"], client.AI_MAX_OUTPUT_TOKENS)
         self.assertNotIn("providerOptions", body)  # No different-model/paid fallback.
         self.assertNotIn("options", body)  # Ollama's num_ctx must not reach Gateway.
         self.assertEqual(result["_model_timing"]["input_tokens"], 100)

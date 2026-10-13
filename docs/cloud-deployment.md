@@ -28,7 +28,7 @@
 
 ## AI
 
-本機預設為 `qwen3:4b` 與 Ollama 的結構化輸出。Vercel 部署預設改用 AI Gateway 與 `alibaba/qwen-3-14b`；其他雲端主機可明確設定 `REGINTEL_AI_PROVIDER=vercel_gateway` 並提供伺服器端 Gateway 驗證值。雲端的 `127.0.0.1:11434` 指向雲端主機本身，不會連到個人電腦。Gateway 的帳號啟用、免費額度與實測流程見 [Vercel 部署文件](vercel-deployment.md)。
+本機預設為 `qwen3:4b` 與 Ollama 的結構化輸出。Vercel 部署預設直接呼叫 Gemini API 的 `gemini-3.8-flash`；其他雲端主機可明確設定 `REGINTEL_AI_PROVIDER=gemini` 並提供伺服器端 `GEMINI_API_KEY`。使用者選擇不需綁卡的方案，須在 Google AI Studio 使用未啟用 Billing 的 Free Tier 專案，免費用量有上限。雲端的 `127.0.0.1:11434` 指向雲端主機本身，不會連到個人電腦。金鑰設定與實測流程見 [Vercel 部署文件](vercel-deployment.md)。
 
 Ollama Cloud 目前不支援本專案使用的結構化輸出，不能只更換網址就假定所有 AI 功能正常。[Ollama 官方說明](https://docs.ollama.com/capabilities/structured-outputs)
 
