@@ -23,7 +23,7 @@ class AnalysisRetryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, \
              patch.object(analysis, "AI_CACHE_FILE", Path(directory) / "ai.json"), \
              patch.object(analysis, "load_ai_cache", return_value=cache), \
-             patch.object(analysis, "call_ollama_structured_json", return_value={}) as model, \
+             patch.object(analysis, "call_structured_json", return_value={}) as model, \
              patch.object(analysis, "sanitize_ai_analysis", return_value=new):
             self.assertEqual(analysis.analyze_event_with_ai(event), old)
             model.assert_not_called()

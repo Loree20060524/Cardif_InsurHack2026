@@ -28,7 +28,7 @@
 
 ## AI
 
-目前預設為 `qwen3:4b` 與 Ollama 的結構化輸出。雲端的 `127.0.0.1:11434` 指向雲端主機本身，不會連到個人電腦。因此完整功能需在雲端運行模型，或增加適合的雲端模型介接。
+本機預設為 `qwen3:4b` 與 Ollama 的結構化輸出。Vercel 部署預設改用 AI Gateway 與 `alibaba/qwen-3-14b`；其他雲端主機可明確設定 `REGINTEL_AI_PROVIDER=vercel_gateway` 並提供伺服器端 Gateway 驗證值。雲端的 `127.0.0.1:11434` 指向雲端主機本身，不會連到個人電腦。Gateway 的帳號啟用、免費額度與實測流程見 [Vercel 部署文件](vercel-deployment.md)。
 
 Ollama Cloud 目前不支援本專案使用的結構化輸出，不能只更換網址就假定所有 AI 功能正常。[Ollama 官方說明](https://docs.ollama.com/capabilities/structured-outputs)
 

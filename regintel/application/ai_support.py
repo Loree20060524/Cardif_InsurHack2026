@@ -12,8 +12,9 @@ from ..config import (
     AI_CACHE_FILE,
     AI_PROMPT_VERSION,
     AI_PROVIDER_LABEL,
-    OLLAMA_MODEL,
-    OLLAMA_THINK,
+    AI_PROVIDER,
+    AI_MODEL,
+    AI_THINK,
 )
 from ..domain.rules import AI_ALLOWED_DEPARTMENTS
 from ..domain.text import clean_text, now_iso, unique_items
@@ -122,13 +123,13 @@ def ai_event_cache_key(
 
     material = {
 
-        "thinking": OLLAMA_THINK,
+        "thinking": AI_THINK,
 
         "prompt_version":
             AI_PROMPT_VERSION,
 
         "model":
-            OLLAMA_MODEL,
+            AI_MODEL,
 
         "id":
             event.get(
@@ -179,6 +180,9 @@ def ai_event_cache_key(
             ),
     }
 
+
+    if AI_PROVIDER != "ollama":
+        material["provider"] = AI_PROVIDER
 
     return (
         hashlib.sha256(
@@ -620,7 +624,7 @@ def sanitize_ai_analysis(
 
         "ai_model":
             (
-                OLLAMA_MODEL
+                AI_MODEL
                 if ai_is_substantive
                 else
                 ""

@@ -13,7 +13,7 @@ from ..config import (
     CACHE_FILE,
     CACHE_TTL_SECONDS,
     MANUAL_REFRESH_COOLDOWN_SECONDS,
-    OLLAMA_MODEL,
+    AI_MODEL,
     SOURCE_STORE_FILE,
 )
 from ..domain.event_selection import select_visible_events
@@ -1221,7 +1221,7 @@ def _refresh_data(
                     "按需 AI 深度分析",
 
                 "model":
-                    OLLAMA_MODEL,
+                    AI_MODEL,
 
                 "provider":
                     AI_PROVIDER_LABEL,

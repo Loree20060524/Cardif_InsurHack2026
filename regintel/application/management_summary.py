@@ -6,11 +6,11 @@ import hashlib
 import json
 from typing import Any
 
-from ..config import AI_CACHE_FILE, AI_PROMPT_VERSION, AI_PROVIDER_LABEL, OLLAMA_MODEL, OLLAMA_THINK
+from ..config import AI_CACHE_FILE, AI_PROMPT_VERSION, AI_PROVIDER_LABEL, AI_PROVIDER, AI_MODEL, AI_THINK
 from ..domain.schemas import MANAGEMENT_SUMMARY_SCHEMA
 from ..domain.text import clean_text, now_iso, unique_items
 from ..infrastructure.json_store import atomic_write_json, document_transaction
-from ..infrastructure.ollama import call_ollama_structured_json
+from ..infrastructure.model_client import call_structured_json
 from ..infrastructure.announcement_content import fetch_announcement_content
 from .ai_support import load_ai_cache, serialize_ai_cache
 from .event_analysis import (
@@ -63,10 +63,10 @@ def management_source_text(event: dict[str, Any]) -> str:
 
 def management_cache_key(events: list[dict[str, Any]]) -> str:
     material = {
-        "thinking": OLLAMA_THINK,
+        "thinking": AI_THINK,
         "selection_version": MANAGEMENT_SELECTION_VERSION,
         "prompt_version": AI_PROMPT_VERSION,
-        "model": OLLAMA_MODEL,
+        "model": AI_MODEL,
         "events": [
             {
                 "id": event.get("id", ""),
@@ -79,6 +79,8 @@ def management_cache_key(events: list[dict[str, Any]]) -> str:
             for event in events
         ],
     }
+    if AI_PROVIDER != "ollama":
+        material["provider"] = AI_PROVIDER
     return hashlib.sha256(json.dumps(material, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
 
 
@@ -138,7 +140,7 @@ def _normalize_summary(result: dict[str, Any], events: list[dict[str, Any]]) -> 
         "trend_observations": strings("trend_observations"),
         "management_note": clean_text(result.get("management_note", "")) or "本摘要依您所選資訊產生，最終適用性仍需由相關專業單位確認。",
         "analysis_mode": "AI 深度分析",
-        "ai_model": OLLAMA_MODEL,
+        "ai_model": AI_MODEL,
         "ai_provider": AI_PROVIDER_LABEL,
         "ai_generated_at": now_iso(),
         "source_events": _source_events(events),
@@ -171,7 +173,7 @@ def _summarize_group(events: list[dict[str, Any]]) -> dict[str, Any]:
             f"類型：{event.get('category', '')}\n"
             f"官方內容摘錄：{management_source_text(event)[:900]}"
         )
-    result = call_ollama_structured_json(
+    result = call_structured_json(
         instructions=_SUMMARY_INSTRUCTIONS,
         input_text="\n\n".join(texts) + f"\n\n請彙整以上全部 {len(events)} 筆資訊。",
         schema=MANAGEMENT_SUMMARY_SCHEMA,
@@ -195,7 +197,7 @@ def _merge_group(reports: list[dict[str, Any]], events: list[dict[str, Any]]) ->
         }
         for report in reports
     ]
-    result = call_ollama_structured_json(
+    result = call_structured_json(
         instructions=_SUMMARY_INSTRUCTIONS + "本次輸入是所有已選資訊的分組摘要，請整合每組重點，不得略去任何組別。",
         input_text=json.dumps(compact, ensure_ascii=False) + f"\n共有 {len(events)} 筆使用者選取的資訊，請生成整體管理摘要。",
         schema=MANAGEMENT_SUMMARY_SCHEMA,

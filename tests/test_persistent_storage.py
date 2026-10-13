@@ -123,7 +123,7 @@ class CloudStorageBehaviorTests(unittest.TestCase):
                   "management": {"report": {"summary": "隊友的管理摘要"}}}
         with patch.object(event_analysis, "load_ai_cache", side_effect=[stale, latest]), \
              patch.object(event_analysis, "get_law_comparisons", return_value=[]), \
-             patch.object(event_analysis, "call_ollama_structured_json", return_value={}), \
+             patch.object(event_analysis, "call_structured_json", return_value={}), \
              patch.object(event_analysis, "sanitize_ai_analysis", return_value={"analysis_mode": "AI 深度分析"}), \
              patch.object(event_analysis, "document_transaction", side_effect=lambda *a: nullcontext()), \
              patch.object(event_analysis, "atomic_write_json") as save:

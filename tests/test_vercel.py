@@ -12,6 +12,7 @@ from unittest.mock import patch
 from api import index
 from regintel import web
 from regintel.infrastructure.postgres_store import StorageError
+from regintel.infrastructure.model_client import ModelServiceError
 from scripts.build_vercel import build_public
 
 
@@ -116,6 +117,24 @@ class VercelHandlerTests(unittest.TestCase):
         self.assertEqual(result["deployment"]["storage"], "postgres")
         self.assertEqual(result["deployment"]["pending"], ["cloud_ai"])
         self.assertFalse(result["deployment"]["ready"])
+
+    def test_health_requires_an_observed_ai_success_in_addition_to_storage(self):
+        with patch.object(index, "storage_health", return_value={"backend": "postgres", "connected": True}), \
+             patch.object(index, "model_health", return_value={"ready": True, "status": "verified"}):
+            status, result = self.request("/api/health")
+        self.assertEqual(status, 200)
+        self.assertTrue(result["deployment"]["ready"])
+        self.assertEqual(result["deployment"]["pending"], [])
+        self.assertEqual(result["deployment"]["ai_check"]["status"], "verified")
+
+    def test_qa_preserves_safe_cloud_failure_instead_of_suggesting_local_ollama(self):
+        error = ModelServiceError("verification_required", "請完成 AI Gateway 帳號驗證。")
+        with patch.object(web, "answer_regulatory_question", side_effect=error):
+            status, result = self.request("/api/regulatory-qa", {"question": "近期監理要求？"})
+        self.assertEqual(status, 502)
+        self.assertEqual(result["code"], "verification_required")
+        self.assertIn("AI Gateway", result["error"])
+        self.assertNotIn("Ollama", result["error"])
 
 
 if __name__ == "__main__":

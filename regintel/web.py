@@ -17,10 +17,11 @@ from .application.regulatory_qa import QABusyError, answer_regulatory_question
 from .application.refresh import invalidate_refresh_cache, refresh_data
 from .application.event_history import load_older_events
 from .application.law_comparison import get_law_comparisons
-from .config import AI_PROMPT_VERSION, AI_PROVIDER_LABEL, APP_VERSION, BASE_DIR, DATA_DIR, HOST, OLLAMA_MODEL, PORT
+from .config import AI_MODEL, AI_PROVIDER, AI_PROMPT_VERSION, AI_PROVIDER_LABEL, APP_VERSION, BASE_DIR, DATA_DIR, HOST, OLLAMA_MODEL, PORT
 from .domain.risk_analysis import rule_based_analyze_event
 from .domain.text import clean_text, now_iso
 from .infrastructure.ollama import preload_ollama, probe_ollama
+from .infrastructure.model_client import ModelServiceError, model_unavailable_message
 from .infrastructure.postgres_store import StorageError
 
 
@@ -205,8 +206,10 @@ class Handler(
                 self.send_json({"ok": False, "error": str(exc)}, status=429)
             except StorageError:
                 raise
+            except ModelServiceError as exc:
+                self.send_json({"ok": False, "error": str(exc), "code": exc.code}, status=502)
             except Exception:
-                self.send_json({"ok": False, "error": "AI 問答暫時無法完成，請確認本機 Ollama 與模型已啟動後再試。"}, status=502)
+                self.send_json({"ok": False, "error": model_unavailable_message()}, status=502)
             return
         if path == "/api/management-summary":
             self.send_management_summary(body.get("event_ids"))
@@ -403,7 +406,7 @@ class Handler(
                             analysis,
 
                         "model":
-                            OLLAMA_MODEL,
+                            AI_MODEL,
 
                         "provider":
                             AI_PROVIDER_LABEL,
@@ -625,72 +628,73 @@ def main():
     print(
         (
             "AI 分析："
-            f"本機 Ollama（{OLLAMA_MODEL}）"
+            f"{AI_PROVIDER_LABEL}（{AI_MODEL}）"
         )
     )
 
 
-    ollama_status = (
-        probe_ollama()
-    )
-
-
-    if not ollama_status.get(
-        "reachable"
-    ):
-
-        print(
-            (
-                "Ollama 狀態：無法連線。"
-                "請先啟動 Ollama。"
-            )
-        )
-
-        print(
-            (
-                "若尚未下載模型，請執行："
-                f"ollama pull {OLLAMA_MODEL}"
-            )
+    if AI_PROVIDER == "ollama":
+        ollama_status = (
+            probe_ollama()
         )
 
 
-    elif not ollama_status.get(
-        "model_installed"
-    ):
+        if not ollama_status.get(
+            "reachable"
+        ):
 
-        print(
-
-            (
-                "Ollama 狀態：已連線，"
-                f"但尚未找到模型 {OLLAMA_MODEL}。"
+            print(
+                (
+                    "Ollama 狀態：無法連線。"
+                    "請先啟動 Ollama。"
+                )
             )
-        )
 
-        print(
-            (
-                "請執行："
-                f"ollama pull {OLLAMA_MODEL}"
+            print(
+                (
+                    "若尚未下載模型，請執行："
+                    f"ollama pull {OLLAMA_MODEL}"
+                )
             )
-        )
 
 
-    else:
+        elif not ollama_status.get(
+            "model_installed"
+        ):
 
-        print(
-            (
-                "Ollama 狀態："
-                "已連線，模型已就緒。"
+            print(
+
+                (
+                    "Ollama 狀態：已連線，"
+                    f"但尚未找到模型 {OLLAMA_MODEL}。"
+                )
             )
-        )
 
-        def warm_model():
-            try:
-                timing = preload_ollama()
-                print(f"Ollama 模型已預載（{timing['request_seconds']:.1f} 秒）。", flush=True)
-            except Exception as exc:
-                print(f"Ollama 預載未完成，首次分析時會再嘗試載入：{clean_text(str(exc))[:180]}", flush=True)
+            print(
+                (
+                    "請執行："
+                    f"ollama pull {OLLAMA_MODEL}"
+                )
+            )
 
-        threading.Thread(target=warm_model, name="ollama-preload", daemon=True).start()
+
+        else:
+
+            print(
+                (
+                    "Ollama 狀態："
+                    "已連線，模型已就緒。"
+                )
+            )
+
+            def warm_model():
+                try:
+                    timing = preload_ollama()
+                    print(f"Ollama 模型已預載（{timing['request_seconds']:.1f} 秒）。", flush=True)
+                except Exception as exc:
+                    print(f"Ollama 預載未完成，首次分析時會再嘗試載入：{clean_text(str(exc))[:180]}", flush=True)
+
+            threading.Thread(target=warm_model, name="ollama-preload", daemon=True).start()
 
 
     print(

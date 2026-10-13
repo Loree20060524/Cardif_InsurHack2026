@@ -55,7 +55,7 @@ class ManagementSelectionTests(unittest.TestCase):
 
         with patch.object(summaries, "_cached_summary", return_value=None), \
              patch.object(summaries, "_save_summary"), \
-             patch.object(summaries, "call_ollama_structured_json", side_effect=model):
+             patch.object(summaries, "call_structured_json", side_effect=model):
             result = summaries.generate_management_summary_ai(events)
 
         self.assertEqual(len(inputs), 3)

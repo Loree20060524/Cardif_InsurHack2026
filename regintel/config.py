@@ -16,7 +16,7 @@ from pathlib import Path
 # =========================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "10.20"
+APP_VERSION = "10.21"
 
 # Keep deployed data on an attached volume; local runs keep their existing files.
 _data_directory = os.environ.get("REGINTEL_DATA_DIR", "").strip()
@@ -168,9 +168,19 @@ EVENT_HISTORY_FILE = DATA_DIR / "regintel_event_history_v10.json"
 LAW_VERSIONS_FILE = DATA_DIR / "regintel_law_versions_v1.json"
 
 
-AI_PROVIDER_LABEL = (
-    "Ollama（本機）"
+AI_PROVIDER = os.environ.get(
+    "REGINTEL_AI_PROVIDER", "vercel_gateway" if IS_VERCEL else "ollama"
+).strip().lower()
+if AI_PROVIDER not in {"ollama", "vercel_gateway"}:
+    raise ValueError("REGINTEL_AI_PROVIDER 必須是 ollama 或 vercel_gateway。")
+AI_MODEL = (
+    os.environ.get("REGINTEL_AI_MODEL", "alibaba/qwen-3-14b").strip()
+    if AI_PROVIDER == "vercel_gateway" else OLLAMA_MODEL
 )
+AI_THINK = False if AI_PROVIDER == "vercel_gateway" else OLLAMA_THINK
+AI_PROVIDER_LABEL = "Vercel AI Gateway" if AI_PROVIDER == "vercel_gateway" else "Ollama（本機）"
+AI_GATEWAY_TIMEOUT = min(240, max(10, int(os.environ.get("AI_GATEWAY_TIMEOUT", "180"))))
+AI_GATEWAY_MAX_TOKENS = min(8192, max(512, int(os.environ.get("AI_GATEWAY_MAX_TOKENS", "4096"))))
 
 
 AI_ENABLED = True

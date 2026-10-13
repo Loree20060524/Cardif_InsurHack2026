@@ -5,6 +5,8 @@ import urllib.parse
 from regintel.config import IS_VERCEL
 from regintel.web import Handler
 from regintel.infrastructure.json_store import storage_health
+from regintel.infrastructure.model_client import model_health
+from regintel.infrastructure.postgres_store import StorageError
 
 
 class handler(Handler):
@@ -12,12 +14,17 @@ class handler(Handler):
         if urllib.parse.urlsplit(self.path).path == "/api/health":
             storage = storage_health()
             persistent = storage["backend"] == "postgres" and storage["connected"]
+            try:
+                ai = model_health()
+            except StorageError:
+                ai = {"ready": False, "status": "storage_unavailable"}
             payload = {**payload, "deployment": {
                 "platform": "vercel" if IS_VERCEL else "local-preview",
-                "ready": False,
+                "ready": bool(persistent and ai["ready"]),
                 "storage": "postgres" if persistent else "unavailable" if not storage["connected"] else "temporary" if IS_VERCEL else "local",
                 "storage_check": storage,
-                "pending": ([] if persistent else ["persistent_storage"]) + ["cloud_ai"],
+                "ai_check": ai,
+                "pending": ([] if persistent else ["persistent_storage"]) + ([] if ai["ready"] else ["cloud_ai"]),
             }}
         super().send_json(payload, status)
 

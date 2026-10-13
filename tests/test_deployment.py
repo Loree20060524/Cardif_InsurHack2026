@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class DeploymentTests(unittest.TestCase):
     def run_python(self, source, **settings):
         environment = dict(os.environ)
-        for name in ("REGINTEL_HOST", "REGINTEL_DATA_DIR", "PORT", "VERCEL"):
+        for name in ("REGINTEL_HOST", "REGINTEL_DATA_DIR", "PORT", "VERCEL", "REGINTEL_AI_PROVIDER", "REGINTEL_AI_MODEL"):
             environment.pop(name, None)
         environment.update(settings)
         result = subprocess.run(
@@ -90,6 +90,31 @@ print(json.dumps({name: load_json_file(getattr(config, name))["retained"] for na
             server.return_value.serve_forever.assert_called_once()
             server.return_value.server_close.assert_called_once()
             self.assertTrue(web.DATA_DIR.is_dir())
+
+    def test_local_and_vercel_select_independent_model_services(self):
+        code = '''
+import json
+from regintel import config
+print(json.dumps({"provider": config.AI_PROVIDER, "model": config.AI_MODEL,
+                  "ollama": config.OLLAMA_MODEL, "think": config.AI_THINK}))
+'''
+        local = self.run_python(code)
+        cloud = self.run_python(code, VERCEL="1")
+        self.assertEqual(local["provider"], "ollama")
+        self.assertEqual(local["model"], local["ollama"])
+        self.assertEqual(cloud["provider"], "vercel_gateway")
+        self.assertEqual(cloud["model"], "alibaba/qwen-3-14b")
+        self.assertFalse(cloud["think"])
+        explicit = self.run_python(code, REGINTEL_AI_PROVIDER="vercel_gateway", REGINTEL_AI_MODEL="configured/model")
+        self.assertEqual(explicit["model"], "configured/model")
+
+    def test_cloud_startup_never_probes_or_preloads_local_ollama(self):
+        with patch.object(web, "AI_PROVIDER", "vercel_gateway"), \
+             patch.object(web, "RegIntelHTTPServer"), patch.object(web, "probe_ollama") as probe, \
+             patch.object(web, "preload_ollama") as preload, patch("builtins.print"):
+            self.assertEqual(web.main(), 0)
+        probe.assert_not_called()
+        preload.assert_not_called()
 
 
 if __name__ == "__main__":

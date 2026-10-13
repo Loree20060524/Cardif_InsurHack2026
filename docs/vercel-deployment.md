@@ -1,6 +1,6 @@
 # Vercel 部署與資料保存
 
-目標是個人電腦關機後，隊友仍能使用平台。正式網址為 https://cardif-insur-hack2026.vercel.app/ ，對應 `loree1/cardif-insur-hack2026` 與 GitHub 的 `main`。網站與 API 已驗證可開啟；Neon Free 資料庫 `regintel-db` 已由使用者建立並連接 Production。本次提供 PostgreSQL 儲存程式與搬移工具，五份本機資料已遷移並以新連線逐份核對 SHA-256。新版部署後以 `/api/health` 的 `storage_check` 確認正式站已使用資料庫；雲端 AI 仍待接入。
+目標是個人電腦關機後，隊友仍能使用平台。正式網址為 https://cardif-insur-hack2026.vercel.app/ ，對應 `loree1/cardif-insur-hack2026` 與 GitHub 的 `main`。網站與 API 已驗證可開啟；Neon Free 資料庫 `regintel-db` 已由使用者建立並連接 Production。五份本機資料已遷移並以新連線逐份核對 SHA-256，正式站已確認讀取 Neon。雲端 AI 程式已接入 Gateway，帳號權限及生成結果仍須於新版部署後驗證。
 
 ## 已備妥的設定
 
@@ -44,13 +44,19 @@ python scripts/migrate_storage.py --env-file .env.database.local --verify
 
 Vercel Function 不會執行目前電腦上的 Ollama。完整問答、重新分析及管理摘要需要獨立的模型服務或雲端模型 API，並保留目前的結構化輸出和引用驗證。
 
-尚未選定模型供應商，也未新增金鑰或使用任何付費 AI。網站的免費託管不代表 AI 推論免費；選定方案後須確認免費額度、模型支援、資料使用條款，以及 300 秒內的實際回應速度。若改用模型 API，還須調整快取識別與本機 Ollama 的顯示文字。
+三個功能已共用模型介面：單筆分析、使用者選取範圍的管理摘要、附原文引用的監理問答。本機預設 `ollama`；Vercel 預設 `vercel_gateway`，模型為 `alibaba/qwen-3-14b`。可明確設定 `REGINTEL_AI_PROVIDER` 與 `REGINTEL_AI_MODEL` 切換，雲端不探測或預載本機 Ollama。原本的引用檢查、規則備援與 Neon 快取保留；雲端與本機模型快取分開，本機原有快取識別不變。
+
+2026-10-13 已核對 [即時模型清單](https://ai-gateway.vercel.sh/v1/models) 與 [Qwen3-14B 官方頁](https://vercel.com/ai-gateway/models/qwen-3-14b)：支援結構化輸出，DeepInfra 的「Free AI Gateway Credit」為 Yes；當日輸入 $0.12／百萬 token、輸出 $0.24／百萬 token。這是可用免費額度支付的模型，並非永久零價格模型。Gateway 每月 $5 免費額度須完成付款方式驗證，且限適用模型；購買額度後轉為付費層並停止每月免費額度。程式不購買額度、不設定自動加值，也不自動改用其他模型。[額度規則](https://vercel.com/docs/ai-gateway/pricing)
+
+部署環境優先逐次讀取 Vercel 提供的 `VERCEL_OIDC_TOKEN`，不需供應商金鑰；也支援僅存在 Vercel 伺服器環境的 `AI_GATEWAY_API_KEY`。帳號驗證、模型存取權與免費額度仍須實測；若 Vercel 未提供 OIDC，可在專案設定啟用，或由使用者在 Gateway 建立金鑰並直接存入 Production 環境變數，再重新部署。不要將金鑰貼入聊天或前端。[OIDC 驗證](https://vercel.com/docs/ai-gateway/authentication-and-byok/oidc)
+
+所有雲端請求使用嚴格 JSON Schema，回覆再經本機格式驗證，拒絕截斷、額外欄位與無效結果；關閉推理輸出以控制延遲，單次輸出預設上限 4096 token、逾時 180 秒。不自動重試生成，避免重複消耗。401／402／403／429 等情況以安全訊息說明，不回傳上游原始訊息、提示詞或驗證值。單筆分析仍可使用規則備援，但明確標示 `ai_used=false`；問答、管理摘要不冒充生成成功。
 
 ### 3. 實際部署與驗證
 
 部署來源為既有私人 GitHub 專案 `Loree20060524/Cardif_InsurHack2026`，預期連接 `main`，讓之後推送更新自動部署。Vercel 帳號需要具備目標工作區及此私人儲存庫的存取權；不需要將 GitHub 儲存庫改為公開。
 
-新的 `/api/health` 會實際檢查儲存層：`deployment.storage=postgres` 以及 `storage_check.connected=true` 表示資料庫可讀取，`document_count` 可輔助核對已搬移的五份文件；失敗則標示 unavailable。`ok=true` 仍只代表 API 存活，`ready=false` 與 `pending=[cloud_ai]` 表示模型尚未完成；這個健康檢查不證明歷史資料已完整搬移。
+`/api/health` 會實際檢查儲存層：`deployment.storage=postgres` 以及 `storage_check.connected=true` 表示資料庫可讀取，`document_count` 可輔助核對五份文件；失敗則標示 unavailable。`ok=true` 只代表 API 存活。`ai_check` 回報模型的實測結果：僅有驗證值時仍為 unverified；實際生成且通過格式檢查後才為 verified。最近結果併入既有 AI 快取文件，供不同雲端實例讀取，有效期 24 小時；後續模型失敗會改成 unavailable。健康檢查本身不呼叫模型、不消耗推論額度；資料庫與模型均就緒才回報 `ready=true`。這不代表引用語義、所有功能或歷史資料已完整驗證。
 
 部署後至少要實際確認頁面／API 路由、來源更新、重啟後資料保存、AI 問答引用、單筆分析及管理摘要，才能提供隊友完整使用的固定網址。
 
@@ -61,3 +67,5 @@ Vercel Function 不會執行目前電腦上的 Ollama。完整問答、重新分
 2026-10-13：106 項本機測試通過，另以 Neon 實際連線完成 4 項 PostgreSQL 測試，全部通過。五份本機快照的離線檢查、靜態建置及 Neon 資料搬移均通過；搬移後已使用新連線逐份核對 SHA-256。本機原檔保留，搬移快照另存於忽略的 `tmp/neon-migration-20261013-8qu8qf28`。正式站驗證仍須在新版部署後進行。
 
 `tests/test_postgres_integration.py` 另提供真實資料庫測試，只有明確設定 `REGINTEL_TEST_DATABASE_URL` 才執行。測試使用隨機命名空間並僅清理自己的測試資料，驗證新實例讀取、交易失敗回滾、並行合併與 revision 更新。未設定測試連線時會標示 skipped，不可視為資料庫驗證通過。
+
+2026-10-13 雲端 AI 改動：121 項本機測試通過，4 項真實 PostgreSQL 測試本次未重跑；另完成最後錯誤處理、健康狀態與部署設定的 28 項針對性測試。靜態建置成功。上述測試使用模擬模型回覆，不代表雲端模型實測成功。
