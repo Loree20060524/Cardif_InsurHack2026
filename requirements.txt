@@ -1,2 +1,4 @@
 # Text extraction for public announcement PDF attachments.
 pypdf>=5.0
+# Shared persistent storage on Vercel; imported lazily for local file mode.
+psycopg[binary]>=3.2,<4

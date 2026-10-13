@@ -12,7 +12,7 @@ from datetime import date
 from ..config import LAW_VERSIONS_FILE
 from ..domain.text import clean_text, local_tag, normalize_document_text, now_iso
 from ..source_catalog import SOURCES
-from .json_store import atomic_write_json, load_json_file
+from .json_store import atomic_write_json, document_transaction, load_json_file
 
 _lock = threading.RLock()
 
@@ -52,7 +52,7 @@ def history_capture_is_fresh(identifier: str, revision: str) -> bool:
 
 
 def remember_history_capture(identifier: str, revision: str) -> None:
-    with _lock:
+    with _lock, document_transaction(LAW_VERSIONS_FILE):
         store = load_json_file(LAW_VERSIONS_FILE)
         store.setdefault("history_checks", {})[f"{identifier}|{revision}"] = time.time()
         atomic_write_json(LAW_VERSIONS_FILE, store)
@@ -60,7 +60,7 @@ def remember_history_capture(identifier: str, revision: str) -> None:
 
 def save_public_versions(documents: list[dict]) -> None:
     """Store the public text, revision date, and provenance fields."""
-    with _lock:
+    with _lock, document_transaction(LAW_VERSIONS_FILE):
         store = load_json_file(LAW_VERSIONS_FILE)
         laws = store.setdefault("laws", {})
         changed = False

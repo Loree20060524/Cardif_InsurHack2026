@@ -9,7 +9,7 @@ from typing import Any
 from ..config import AI_CACHE_FILE, AI_PROMPT_VERSION, AI_PROVIDER_LABEL, OLLAMA_MODEL, OLLAMA_THINK
 from ..domain.schemas import MANAGEMENT_SUMMARY_SCHEMA
 from ..domain.text import clean_text, now_iso, unique_items
-from ..infrastructure.json_store import atomic_write_json
+from ..infrastructure.json_store import atomic_write_json, document_transaction
 from ..infrastructure.ollama import call_ollama_structured_json
 from ..infrastructure.announcement_content import fetch_announcement_content
 from .ai_support import load_ai_cache, serialize_ai_cache
@@ -89,7 +89,7 @@ def _cached_summary(key: str) -> dict[str, Any] | None:
 
 
 def _save_summary(key: str, summary: dict[str, Any]) -> None:
-    with serialize_ai_cache():
+    with serialize_ai_cache(), document_transaction(AI_CACHE_FILE):
         cache = load_ai_cache()
         cache["management"][key] = summary
         try:

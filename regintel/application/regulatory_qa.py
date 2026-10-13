@@ -10,7 +10,7 @@ from datetime import date
 from ..config import CACHE_FILE, EVENT_HISTORY_FILE, LAW_VERSIONS_FILE, SOURCE_STORE_FILE, OLLAMA_MODEL
 from ..domain.knowledge_search import KnowledgeIndex, public_documents
 from ..domain.text import clean_text, now_iso
-from ..infrastructure.json_store import load_json_file
+from ..infrastructure.json_store import document_signature, load_json_file
 from ..infrastructure.ollama import call_ollama_structured_json
 
 
@@ -89,7 +89,7 @@ def knowledge_index() -> KnowledgeIndex:
     global _index, _index_signature
     files = (CACHE_FILE, SOURCE_STORE_FILE, EVENT_HISTORY_FILE, LAW_VERSIONS_FILE)
     with _index_lock:
-        signature = tuple((str(path), path.stat().st_mtime_ns, path.stat().st_size) if path.exists() else (str(path), 0, 0) for path in files)
+        signature = document_signature(files)
         if _index is not None and signature == _index_signature:
             return _index
         events = []

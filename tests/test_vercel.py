@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 from api import index
 from regintel import web
+from regintel.infrastructure.postgres_store import StorageError
 from scripts.build_vercel import build_public
 
 
@@ -100,6 +101,21 @@ class VercelHandlerTests(unittest.TestCase):
         self.assertFalse(result["deployment"]["ready"])
         self.assertEqual(result["deployment"]["storage"], "temporary")
         self.assertIn("cloud_ai", result["deployment"]["pending"])
+
+    def test_database_failure_is_a_clear_retryable_response(self):
+        with patch.object(web, "refresh_data", side_effect=StorageError("資料庫暫時無法讀寫")):
+            status, result = self.request("/api/events")
+        self.assertEqual(status, 503)
+        self.assertFalse(result["ok"])
+        self.assertIn("資料庫", result["error"])
+
+    def test_health_reports_verified_storage_separately_from_cloud_ai(self):
+        with patch.object(index, "storage_health", return_value={"backend": "postgres", "connected": True}):
+            status, result = self.request("/api/health")
+        self.assertEqual(status, 200)
+        self.assertEqual(result["deployment"]["storage"], "postgres")
+        self.assertEqual(result["deployment"]["pending"], ["cloud_ai"])
+        self.assertFalse(result["deployment"]["ready"])
 
 
 if __name__ == "__main__":

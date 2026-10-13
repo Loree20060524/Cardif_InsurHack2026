@@ -26,7 +26,8 @@ from ..domain.law_changes import (
 from ..domain.risk_analysis import rule_based_analyze_event
 from ..domain.text import date_sort_key, now_iso
 from ..infrastructure.http_client import classify_error, fetch_url, robots_allowed
-from ..infrastructure.json_store import atomic_write_json, load_json_file
+from ..infrastructure.json_store import atomic_write_json, document_transaction, load_json_file
+from ..infrastructure.postgres_store import StorageBusyError, StorageError, configured
 from ..infrastructure.parsers import SOURCE_PARSER_VERSION, parse_source
 from ..source_catalog import SOURCES, SOURCE_MIN_INTERVAL_SECONDS
 from .event_history import history_metadata, remember_events
@@ -47,6 +48,12 @@ _last_manual_refresh_ts = 0.0
 def invalidate_refresh_cache():
     with _cache_lock:
         _mem_cache["timestamp"] = 0.0
+        if configured():
+            with document_transaction(CACHE_FILE):
+                cached = load_json_file(CACHE_FILE)
+                if cached:
+                    cached["timestamp"] = 0.0
+                    atomic_write_json(CACHE_FILE, cached)
 
 
 # =========================================================
@@ -107,7 +114,22 @@ def source_metadata(
 # Refresh Data
 # =========================================================
 
-def refresh_data(
+def refresh_data(force: bool = False) -> dict[str, Any]:
+    with _cache_lock:
+        try:
+            return _refresh_data(force)
+        except StorageBusyError:
+            cached = load_json_file(CACHE_FILE)
+            if isinstance(cached.get("events"), list) and cached["events"]:
+                return {**cached, "refresh_in_progress": True,
+                        "manual_refresh_limited": bool(force), "manual_retry_after_seconds": 5}
+            raise
+        except StorageError:
+            _mem_cache["timestamp"] = 0.0
+            raise
+
+
+def _refresh_data(
     force: bool = False
 ) -> dict[
     str,
@@ -117,9 +139,23 @@ def refresh_data(
     global _last_manual_refresh_ts
 
 
-    with _cache_lock:
+    with document_transaction(SOURCE_STORE_FILE, CACHE_FILE, blocking=False):
 
         now = time.time()
+
+        if configured():
+            # Shared cache survives cold starts and respects another instance's
+            # invalidation. Local in-memory cache cannot provide that guarantee.
+            cached = load_json_file(CACHE_FILE)
+            manual_timestamp = cached.get("last_manual_refresh_ts", 0)
+            _last_manual_refresh_ts = manual_timestamp if isinstance(manual_timestamp, (int, float)) else 0
+            timestamp = cached.get("timestamp", 0)
+            if (not force and isinstance(timestamp, (int, float))
+                    and 0 <= now - timestamp < CACHE_TTL_SECONDS
+                    and isinstance(cached.get("events"), list) and cached["events"]):
+                _mem_cache.update(cached)
+                return {**cached, "manual_refresh_limited": False, "manual_retry_after_seconds": 0}
+            _mem_cache["timestamp"] = 0.0
 
 
         if (
@@ -914,6 +950,8 @@ def refresh_data(
                 }
 
 
+            except StorageError:
+                raise
             except Exception as exc:
 
                 failed_sources += 1
@@ -1001,7 +1039,7 @@ def refresh_data(
                 store
             )
 
-        except Exception:
+        except OSError:
 
             pass
 
@@ -1114,6 +1152,8 @@ def refresh_data(
 
         payload = {
 
+            "last_manual_refresh_ts": _last_manual_refresh_ts,
+
             "history": history_metadata(),
 
             "timestamp":
@@ -1209,7 +1249,7 @@ def refresh_data(
         )
 
 
-        if visible:
+        if visible or configured():
 
             try:
 
@@ -1218,7 +1258,7 @@ def refresh_data(
                     payload
                 )
 
-            except Exception:
+            except OSError:
 
                 pass
 

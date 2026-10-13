@@ -21,6 +21,7 @@ from .config import AI_PROMPT_VERSION, AI_PROVIDER_LABEL, APP_VERSION, BASE_DIR,
 from .domain.risk_analysis import rule_based_analyze_event
 from .domain.text import clean_text, now_iso
 from .infrastructure.ollama import preload_ollama, probe_ollama
+from .infrastructure.postgres_store import StorageError
 
 
 # =========================================================
@@ -166,10 +167,18 @@ class Handler(
         try:
             summary = generate_management_summary_ai(events)
             self.send_json({"ok": True, "summary": summary})
+        except StorageError:
+            raise
         except Exception as exc:
             self.send_json({"ok": False, "error": clean_text(str(exc))[:400]}, status=502)
 
     def do_POST(self):
+        try:
+            self._do_POST()
+        except StorageError as exc:
+            self.send_json({"ok": False, "error": str(exc)}, status=503)
+
+    def _do_POST(self):
         path = urllib.parse.urlparse(self.path).path
         if path.startswith("/api/compliance/"):
             self.send_json({"ok": False, "error": "公司作業檢查功能已移除，請重新整理頁面。"}, status=410)
@@ -194,6 +203,8 @@ class Handler(
                 self.send_json({"ok": False, "error": str(exc)}, status=400)
             except QABusyError as exc:
                 self.send_json({"ok": False, "error": str(exc)}, status=429)
+            except StorageError:
+                raise
             except Exception:
                 self.send_json({"ok": False, "error": "AI 問答暫時無法完成，請確認本機 Ollama 與模型已啟動後再試。"}, status=502)
             return
@@ -206,10 +217,18 @@ class Handler(
             self.send_json({"ok": True, **refresh_data(False), "history_result": result})
         except ValueError as exc:
             self.send_json({"ok": False, "error": str(exc)}, status=400)
+        except StorageError:
+            raise
         except Exception as exc:
             self.send_json({"ok": False, "error": clean_text(str(exc))[:400]}, status=502)
 
-    def do_GET(
+    def do_GET(self):
+        try:
+            self._do_GET()
+        except StorageError as exc:
+            self.send_json({"ok": False, "error": str(exc)}, status=503)
+
+    def _do_GET(
         self
     ):
 
@@ -392,6 +411,8 @@ class Handler(
                 )
 
 
+            except StorageError:
+                raise
             except Exception as exc:
 
                 error_message = clean_text(

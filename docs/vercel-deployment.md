@@ -1,6 +1,6 @@
-# Vercel 部署準備
+# Vercel 部署與資料保存
 
-目標是個人電腦關機後，隊友仍能使用平台。現在已備妥 Python 入口與靜態建置，尚未建立線上部署，持久化資料庫與雲端 AI 也尚未接妥；不能把這次調整視為完整功能已上線。
+目標是個人電腦關機後，隊友仍能使用平台。正式網址為 https://cardif-insur-hack2026.vercel.app/ ，對應 `loree1/cardif-insur-hack2026` 與 GitHub 的 `main`。網站與 API 已驗證可開啟；Neon Free 資料庫 `regintel-db` 已由使用者建立並連接 Production。本次提供 PostgreSQL 儲存程式與搬移工具，五份本機資料已遷移並以新連線逐份核對 SHA-256。新版部署後以 `/api/health` 的 `storage_check` 確認正式站已使用資料庫；雲端 AI 仍待接入。
 
 ## 已備妥的設定
 
@@ -8,19 +8,37 @@
 - `vercel.json` 使用 Other／無框架預設、Python 3.13、單一 Python Function，將 `/api/*` 轉交原有 API。Function 時限設為 300 秒，不代表所有資料更新與多批管理摘要已在線上驗證可於時限內完成。
 - `python scripts/build_vercel.py` 只把 `index.html` 和允許的 `assets` 複製到 `public`，由 CDN 提供。設定檔、Python 程式、資料快取及開發預覽不會作為靜態網站公開。
 - `.vercelignore` 排除本機快取、憑證、測試及暫存檔；`.env.example` 僅供參考，不會自動載入。不要把 API 金鑰寫入前端程式或 Git。
-- Vercel 的 `VERCEL=1` 會使工作快取使用 `/tmp/regintel`，避免寫入唯讀的程式目錄；本機的預設路徑與 `python server.py` 用法維持原狀。
+- 未設定資料庫連線時，Vercel 的 `VERCEL=1` 會使工作快取使用 `/tmp/regintel`。設定 Neon 連線後，五類資料改存 PostgreSQL，本機未設定連線時繼續使用原本 JSON 檔。
 
 Vercel 官方支援既有專案使用 `BaseHTTPRequestHandler` 類別作為 Python Function，並支援將重寫的路徑參數轉為查詢參數。[Python 入口文件](https://vercel.com/docs/functions/runtimes/python/api-directory)、[路徑重寫](https://vercel.com/docs/rewrites)、[Function 限制](https://vercel.com/docs/functions/limitations)
 
-## 上線前仍須完成
+## 資料保存與後續設定
 
 ### 1. 持久化資料
 
-目前五個 JSON 的讀寫仍使用原有檔案儲存。Vercel 的 `/tmp` 只供暫存，不能保存跨實例、重新部署及重啟的法規歷史或分析結果。設定 `REGINTEL_DATA_DIR` 也不會建立持久化磁碟。[執行環境的檔案限制](https://vercel.com/docs/functions/runtimes)
+`regintel.infrastructure.postgres_store` 以 psycopg 3 與 PostgreSQL JSONB 保存五類文件，名稱沿用原檔名。連線僅在請求需要資料時建立，建置或匯入模組不連線。未設定資料庫時使用原檔案模式；已設定但連線失敗時會回報錯誤，不會當成空歷史或改存暫存檔。[執行環境的檔案限制](https://vercel.com/docs/functions/runtimes)
 
-須增加共用資料庫儲存，例如 Vercel Marketplace 的 PostgreSQL 服務。整合時須一併處理多實例同時更新的合併／鎖定，以及問答索引的版本失效；單純將檔案上傳到雲端物件儲存，不能解決多人同時操作時的資料覆寫。Neon 是可評估的整合選項，但目前沒有建立或連接資料庫。[Vercel Marketplace](https://vercel.com/marketplace/neon)
+連線依序辨識 `REGINTEL_DATABASE_URL`、`DATABASE_URL`、`POSTGRES_URL`、`STORAGE_URL`、`STORAGE_DATABASE_URL`、`STORAGE_POSTGRES_URL`、`POSTGRES_URL_NON_POOLING`；亦支援 libpq 的 `PGHOST`／`PGDATABASE`／`PGUSER`／`PGPASSWORD`。優先使用 Neon 的 pooled 連線。讀取與合併更新使用交易級 advisory locks；匯入使用獨立的排他鎖。一般 AI 生成不持有資料庫交易，生成完成後重新讀取最新快取再合併。問答索引以文件 revision 判斷是否需要重建。[Neon Marketplace](https://vercel.com/marketplace/neon)、[PostgreSQL advisory locks](https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS)
 
 本機已有的來源、法規版本、歷史事件及 AI 分析不在 GitHub 裡。保留現有成果需另外遷移這五份資料，不能把第一次雲端重新抓取當成歷史資料已遷移。新資料庫接妥後，還須驗證換一個執行實例仍能讀回原資料。
+
+先檢查本機快照，這個指令不連線或寫入資料庫：
+
+```powershell
+python scripts/migrate_storage.py --check
+```
+
+在本機 `.env.database.local` 填入 `REGINTEL_DATABASE_URL`，連線值留在本機檔案中。正式環境的 Secret 不會由 `vercel env pull` 匯出，不要為了搬移把 Secret 改成可讀的 Config；透過 Neon 的連線設定取得所需連線。這個檔案已由 `.gitignore` 與 `.vercelignore` 排除，僅搬移工具明確以 `--env-file` 載入，`server.py` 不會自動載入。
+
+停止本機來源更新後，在部署新儲存程式前搬移，避免新站先在空資料庫建立不同快照：
+
+```powershell
+python -m pip install -r requirements.txt
+python scripts/migrate_storage.py --env-file .env.database.local --apply
+python scripts/migrate_storage.py --env-file .env.database.local --verify
+```
+
+工具須完整讀到五份 JSON 才會寫入；資料庫已有不同內容或只搬了一部分時會停止，沒有覆寫選項。相同快照重跑不改資料；成功後以新連線逐份核對 SHA-256。預設命名空間為 `regintel-v1`，更改 `REGINTEL_STORAGE_NAMESPACE` 會切換到另一份資料，須讓搬移與正式環境使用相同值。資料庫仍未接妥時，勿宣稱已有持久化保存。
 
 ### 2. 雲端 AI
 
@@ -32,10 +50,14 @@ Vercel Function 不會執行目前電腦上的 Ollama。完整問答、重新分
 
 部署來源為既有私人 GitHub 專案 `Loree20060524/Cardif_InsurHack2026`，預期連接 `main`，讓之後推送更新自動部署。Vercel 帳號需要具備目標工作區及此私人儲存庫的存取權；不需要將 GitHub 儲存庫改為公開。
 
-目前準備版的 `/api/health` 會保留原有版本與時間資訊，另外回傳 `deployment.ready=false`、待完成的資料保存與 AI 項目。`ok=true` 只表示 Python API 存活。這是準備階段的狀態標記，須於資料庫與模型整合完成後替換成實際檢查，不能當成完整平台已可用。
+新的 `/api/health` 會實際檢查儲存層：`deployment.storage=postgres` 以及 `storage_check.connected=true` 表示資料庫可讀取，`document_count` 可輔助核對已搬移的五份文件；失敗則標示 unavailable。`ok=true` 仍只代表 API 存活，`ready=false` 與 `pending=[cloud_ai]` 表示模型尚未完成；這個健康檢查不證明歷史資料已完整搬移。
 
 部署後至少要實際確認頁面／API 路由、來源更新、重啟後資料保存、AI 問答引用、單筆分析及管理摘要，才能提供隊友完整使用的固定網址。
 
 ## 本機驗證
 
 2026-10-12：88 項 Python 測試通過，包含既有功能、主機與資料目錄設定、靜態資源打包、重寫路由的 GET／POST 與編碼參數、敏感路徑拒絕及部署狀態。靜態建置成功；這些檢查不等於 Vercel 線上環境、雲端資料庫或模型已驗證。
+
+2026-10-13：106 項本機測試通過，另以 Neon 實際連線完成 4 項 PostgreSQL 測試，全部通過。五份本機快照的離線檢查、靜態建置及 Neon 資料搬移均通過；搬移後已使用新連線逐份核對 SHA-256。本機原檔保留，搬移快照另存於忽略的 `tmp/neon-migration-20261013-8qu8qf28`。正式站驗證仍須在新版部署後進行。
+
+`tests/test_postgres_integration.py` 另提供真實資料庫測試，只有明確設定 `REGINTEL_TEST_DATABASE_URL` 才執行。測試使用隨機命名空間並僅清理自己的測試資料，驗證新實例讀取、交易失敗回滾、並行合併與 revision 更新。未設定測試連線時會標示 skipped，不可視為資料庫驗證通過。

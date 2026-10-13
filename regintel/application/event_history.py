@@ -12,8 +12,9 @@ from ..config import EVENT_HISTORY_FILE
 from ..domain.event_selection import select_visible_events
 from ..domain.text import clean_text, decode_bytes
 from ..infrastructure.http_client import fetch_url, robots_allowed
-from ..infrastructure.json_store import atomic_write_json, load_json_file
+from ..infrastructure.json_store import atomic_write_json, document_transaction, load_json_file
 from ..infrastructure.parsers import parse_announcement_html
+from ..infrastructure.postgres_store import StorageError
 from ..source_catalog import SOURCES
 
 
@@ -59,7 +60,7 @@ def _merge_records(old: list[dict[str, Any]], new: list[dict[str, Any]]) -> list
 
 
 def remember_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    with _history_lock:
+    with _history_lock, document_transaction(EVENT_HISTORY_FILE):
         history = _load_history()
         merged = _merge_records(history["events"], events)
         if merged != history["events"]:
@@ -117,12 +118,18 @@ def load_older_events(source_keys: Any) -> dict[str, Any]:
                 records = parse_announcement_html(key, data, mime)
                 if not records:
                     raise RuntimeError("官方頁面未解析到資料，請稍後重試。")
-                with _history_lock:
+                with _history_lock, document_transaction(EVENT_HISTORY_FILE):
                     history = _load_history()
                     history["events"] = _merge_records(history["events"], records)
-                    history["sources"][key] = {"loaded_pages": page, "has_more": page < int(pagination[2])}
+                    # A slower request for an earlier page must not move the
+                    # shared pagination cursor backwards.
+                    current_page = history["sources"].get(key, {}).get("loaded_pages", 0)
+                    if page >= current_page:
+                        history["sources"][key] = {"loaded_pages": page, "has_more": page < int(pagination[2])}
                     atomic_write_json(EVENT_HISTORY_FILE, history)
                 fetched += 1
+            except StorageError:
+                raise
             except Exception as exc:
                 errors.append(f"{SOURCES[key]['label']}：{clean_text(str(exc))[:180]}")
         return {"fetched_sources": fetched, "errors": errors}

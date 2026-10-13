@@ -34,7 +34,7 @@ http://127.0.0.1:8082
 
 若啟動時提示連接埠已有服務，請直接開啟原本的網址，或先停止舊程序再重新啟動。
 
-Vercel 的 Python 入口與靜態建置設定已備妥；**持久化資料庫與雲端 AI 尚未接妥，目前不是完整上線版**。設定與驗證狀態見 [Vercel 部署準備](docs/vercel-deployment.md)。
+Vercel 正式網站與 API 已部署，專案支援 Neon／PostgreSQL 持久化儲存。本機五份資料已完成搬移與核對；**雲端 AI 仍待接入**。資料庫連線、搬移工具與正式站的驗證方式見 [Vercel 部署與資料保存](docs/vercel-deployment.md)。
 
 其他 Python 主機可設定 `REGINTEL_HOST=0.0.0.0`、主機提供的 `PORT`，以及指向持久化磁碟的 `REGINTEL_DATA_DIR`。本機預設位置不變，詳見 [一般雲端部署設定](docs/cloud-deployment.md)。
 
