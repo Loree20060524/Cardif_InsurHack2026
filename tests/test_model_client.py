@@ -3,6 +3,7 @@
 import io
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
 import unittest
 import urllib.error
 from unittest.mock import Mock, patch
@@ -79,6 +80,19 @@ class ModelClientTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "missing_credentials")
             opener.assert_not_called()
             self.assertFalse(client.model_health()["ready"])
+
+    def test_runtime_oidc_is_scoped_to_each_request_and_always_cleared(self):
+        def request(value):
+            with client.model_request_context(value):
+                time.sleep(0.01)
+                return client._credential()
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            self.assertEqual(list(executor.map(request, ("request-A", "request-B"))), ["request-A", "request-B"])
+        self.assertEqual(client._credential(), "test-oidc-secret")
+        with self.assertRaises(RuntimeError):
+            with client.model_request_context("failed-request"):
+                raise RuntimeError("end request")
+        self.assertEqual(client._credential(), "test-oidc-secret")
 
     def test_invalid_and_incomplete_results_cannot_be_marked_ready(self):
         for payload in (self.completion({}, "stop"), self.completion({"summary": 1}),

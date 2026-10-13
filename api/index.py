@@ -5,7 +5,7 @@ import urllib.parse
 from regintel.config import IS_VERCEL
 from regintel.web import Handler
 from regintel.infrastructure.json_store import storage_health
-from regintel.infrastructure.model_client import model_health
+from regintel.infrastructure.model_client import model_health, model_request_context
 from regintel.infrastructure.postgres_store import StorageError
 
 
@@ -46,6 +46,10 @@ class handler(Handler):
         return True
 
     def do_GET(self):
+        with model_request_context(self.headers.get("x-vercel-oidc-token") if IS_VERCEL else None):
+            self._handle_GET()
+
+    def _handle_GET(self):
         if self._restore_api_path():
             if self.path.split("?", 1)[0] not in {
                 "/api/health",
@@ -57,8 +61,9 @@ class handler(Handler):
             super().do_GET()
 
     def do_POST(self):
-        if self._restore_api_path():
-            super().do_POST()
+        with model_request_context(self.headers.get("x-vercel-oidc-token") if IS_VERCEL else None):
+            if self._restore_api_path():
+                super().do_POST()
 
     def do_HEAD(self):
         self.send_response(405)

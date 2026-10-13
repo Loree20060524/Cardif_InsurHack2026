@@ -13,6 +13,7 @@ from api import index
 from regintel import web
 from regintel.infrastructure.postgres_store import StorageError
 from regintel.infrastructure.model_client import ModelServiceError
+from regintel.infrastructure import model_client
 from scripts.build_vercel import build_public
 
 
@@ -51,10 +52,10 @@ class VercelHandlerTests(unittest.TestCase):
         self.server.server_close()
         self.worker.join(timeout=5)
 
-    def request(self, path, body=None):
+    def request(self, path, body=None, headers=None):
         request = urllib.request.Request(self.base + path,
             data=json.dumps(body).encode("utf-8") if body is not None else None,
-            headers={"Content-Type": "application/json"})
+            headers={"Content-Type": "application/json", **(headers or {})})
         try:
             response = urllib.request.urlopen(request, timeout=5)
         except urllib.error.HTTPError as error:
@@ -135,6 +136,34 @@ class VercelHandlerTests(unittest.TestCase):
         self.assertEqual(result["code"], "verification_required")
         self.assertIn("AI Gateway", result["error"])
         self.assertNotIn("Ollama", result["error"])
+
+    def test_vercel_passes_runtime_oidc_for_get_and_post_without_retaining_it(self):
+        observed = []
+        def answer(body):
+            observed.append(model_client._credential())
+            return {"status": "insufficient"}
+        def health():
+            observed.append(model_client._credential())
+            return {"ready": False, "status": "unverified"}
+        with patch.object(index, "IS_VERCEL", True), \
+             patch.dict(model_client.os.environ, {}, clear=True), \
+             patch.object(web, "answer_regulatory_question", side_effect=answer), \
+             patch.object(index, "model_health", side_effect=health):
+            self.request("/api/health", headers={"x-vercel-oidc-token": "get-token"})
+            self.request("/api/regulatory-qa", {"question": "測試監理問題"}, {"x-vercel-oidc-token": "post-token"})
+            self.request("/api/health")
+        self.assertEqual(observed, ["get-token", "post-token", ""])
+
+    def test_local_preview_does_not_trust_client_supplied_oidc_headers(self):
+        observed = []
+        def health():
+            observed.append(model_client._credential())
+            return {"ready": False, "status": "unverified"}
+        with patch.object(index, "IS_VERCEL", False), \
+             patch.dict(model_client.os.environ, {}, clear=True), \
+             patch.object(index, "model_health", side_effect=health):
+            self.request("/api/health", headers={"x-vercel-oidc-token": "untrusted-local-token"})
+        self.assertEqual(observed, [""])
 
 
 if __name__ == "__main__":

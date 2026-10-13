@@ -48,7 +48,7 @@ Vercel Function 不會執行目前電腦上的 Ollama。完整問答、重新分
 
 2026-10-13 已核對 [即時模型清單](https://ai-gateway.vercel.sh/v1/models) 與 [Qwen3-14B 官方頁](https://vercel.com/ai-gateway/models/qwen-3-14b)：支援結構化輸出，DeepInfra 的「Free AI Gateway Credit」為 Yes；當日輸入 $0.12／百萬 token、輸出 $0.24／百萬 token。這是可用免費額度支付的模型，並非永久零價格模型。Gateway 每月 $5 免費額度須完成付款方式驗證，且限適用模型；購買額度後轉為付費層並停止每月免費額度。程式不購買額度、不設定自動加值，也不自動改用其他模型。[額度規則](https://vercel.com/docs/ai-gateway/pricing)
 
-部署環境優先逐次讀取 Vercel 提供的 `VERCEL_OIDC_TOKEN`，不需供應商金鑰；也支援僅存在 Vercel 伺服器環境的 `AI_GATEWAY_API_KEY`。帳號驗證、模型存取權與免費額度仍須實測；若 Vercel 未提供 OIDC，可在專案設定啟用，或由使用者在 Gateway 建立金鑰並直接存入 Production 環境變數，再重新部署。不要將金鑰貼入聊天或前端。[OIDC 驗證](https://vercel.com/docs/ai-gateway/authentication-and-byok/oidc)
+部署執行時優先讀取 Vercel 的 `x-vercel-oidc-token` 請求標頭，放在請求專屬 ContextVar 並於結束時清除；不寫入共用環境變數，避免並行請求互相使用驗證值。建置與本機環境另支援 `VERCEL_OIDC_TOKEN`，也可使用僅存在 Vercel 伺服器環境的 `AI_GATEWAY_API_KEY`。不需供應商金鑰。帳號驗證、模型存取權與免費額度仍須實測；若 Vercel 未提供 OIDC，可在專案設定啟用，或由使用者在 Gateway 建立金鑰並直接存入 Production 環境變數，再重新部署。不要將金鑰貼入聊天或前端。[OIDC 執行期間的標頭](https://vercel.com/docs/oidc#in-vercel-functions)、[Gateway 驗證](https://vercel.com/docs/ai-gateway/authentication-and-byok/oidc)
 
 所有雲端請求使用嚴格 JSON Schema，回覆再經本機格式驗證，拒絕截斷、額外欄位與無效結果；關閉推理輸出以控制延遲，單次輸出預設上限 4096 token、逾時 180 秒。不自動重試生成，避免重複消耗。401／402／403／429 等情況以安全訊息說明，不回傳上游原始訊息、提示詞或驗證值。單筆分析仍可使用規則備援，但明確標示 `ai_used=false`；問答、管理摘要不冒充生成成功。
 

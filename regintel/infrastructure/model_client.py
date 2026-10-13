@@ -8,6 +8,8 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Any
 
 from jsonschema import Draft202012Validator, ValidationError
@@ -27,6 +29,7 @@ GATEWAY_RESPONSE_LIMIT = 1_048_576
 STATUS_MAX_AGE_SECONDS = 86400
 _status_lock = threading.Lock()
 _last_status: dict[str, Any] = {}
+_request_oidc: ContextVar[str] = ContextVar("regintel_request_oidc", default="")
 
 
 class ModelServiceError(RuntimeError):
@@ -43,9 +46,20 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def _credential() -> str:
-    # Read per call: deployed OIDC tokens are managed by Vercel, not cached here.
-    return (os.environ.get("VERCEL_OIDC_TOKEN", "").strip()
+    # Runtime tokens arrive in Vercel's request header; build/local tokens may
+    # arrive via environment. Never copy a request token into process-wide env.
+    return (_request_oidc.get()
+            or os.environ.get("VERCEL_OIDC_TOKEN", "").strip()
             or os.environ.get("AI_GATEWAY_API_KEY", "").strip())
+
+
+@contextmanager
+def model_request_context(oidc_token: str | None):
+    token = _request_oidc.set((oidc_token or "").strip())
+    try:
+        yield
+    finally:
+        _request_oidc.reset(token)
 
 
 def _record_status(status: str, code: str = "", message: str = "") -> None:

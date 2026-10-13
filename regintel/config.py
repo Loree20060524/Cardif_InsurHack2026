@@ -16,7 +16,7 @@ from pathlib import Path
 # =========================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "10.21"
+APP_VERSION = "10.22"
 
 # Keep deployed data on an attached volume; local runs keep their existing files.
 _data_directory = os.environ.get("REGINTEL_DATA_DIR", "").strip()
