@@ -57,18 +57,18 @@ class OllamaPerformanceTests(unittest.TestCase):
 
     def test_thinking_modes_cannot_reuse_each_others_event_cache(self):
         event = {"id": "public-event", "description": "Official source."}
-        with patch.object(ai_support, "AI_THINK", False, create=True):
+        with patch.object(ai_support, "OLLAMA_THINK", False, create=True):
             fast = ai_support.ai_event_cache_key(event)
-        with patch.object(ai_support, "AI_THINK", True, create=True):
+        with patch.object(ai_support, "OLLAMA_THINK", True, create=True):
             thinking = ai_support.ai_event_cache_key(event)
         self.assertNotEqual(fast, thinking)
 
     def test_thinking_modes_cannot_reuse_each_others_summary_cache(self):
         events = [{"id": "public-event", "description": "Official source."}]
         with patch.object(management_summary, "management_source_text", return_value="Official source."):
-            with patch.object(management_summary, "AI_THINK", False, create=True):
+            with patch.object(management_summary, "OLLAMA_THINK", False, create=True):
                 fast = management_summary.management_cache_key(events)
-            with patch.object(management_summary, "AI_THINK", True, create=True):
+            with patch.object(management_summary, "OLLAMA_THINK", True, create=True):
                 thinking = management_summary.management_cache_key(events)
         self.assertNotEqual(fast, thinking)
 

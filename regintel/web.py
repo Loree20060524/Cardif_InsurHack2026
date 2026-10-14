@@ -17,12 +17,10 @@ from .application.regulatory_qa import QABusyError, answer_regulatory_question
 from .application.refresh import invalidate_refresh_cache, refresh_data
 from .application.event_history import load_older_events
 from .application.law_comparison import get_law_comparisons
-from .config import AI_MODEL, AI_PROVIDER, AI_PROMPT_VERSION, AI_PROVIDER_LABEL, APP_VERSION, BASE_DIR, DATA_DIR, HOST, OLLAMA_MODEL, PORT
+from .config import AI_PROMPT_VERSION, AI_PROVIDER_LABEL, APP_VERSION, BASE_DIR, OLLAMA_MODEL, PORT
 from .domain.risk_analysis import rule_based_analyze_event
 from .domain.text import clean_text, now_iso
 from .infrastructure.ollama import preload_ollama, probe_ollama
-from .infrastructure.model_client import ModelServiceError, model_unavailable_message
-from .infrastructure.postgres_store import StorageError
 
 
 # =========================================================
@@ -168,18 +166,10 @@ class Handler(
         try:
             summary = generate_management_summary_ai(events)
             self.send_json({"ok": True, "summary": summary})
-        except StorageError:
-            raise
         except Exception as exc:
             self.send_json({"ok": False, "error": clean_text(str(exc))[:400]}, status=502)
 
     def do_POST(self):
-        try:
-            self._do_POST()
-        except StorageError as exc:
-            self.send_json({"ok": False, "error": str(exc)}, status=503)
-
-    def _do_POST(self):
         path = urllib.parse.urlparse(self.path).path
         if path.startswith("/api/compliance/"):
             self.send_json({"ok": False, "error": "公司作業檢查功能已移除，請重新整理頁面。"}, status=410)
@@ -204,12 +194,8 @@ class Handler(
                 self.send_json({"ok": False, "error": str(exc)}, status=400)
             except QABusyError as exc:
                 self.send_json({"ok": False, "error": str(exc)}, status=429)
-            except StorageError:
-                raise
-            except ModelServiceError as exc:
-                self.send_json({"ok": False, "error": str(exc), "code": exc.code}, status=502)
             except Exception:
-                self.send_json({"ok": False, "error": model_unavailable_message()}, status=502)
+                self.send_json({"ok": False, "error": "AI 問答暫時無法完成，請確認本機 Ollama 與模型已啟動後再試。"}, status=502)
             return
         if path == "/api/management-summary":
             self.send_management_summary(body.get("event_ids"))
@@ -220,18 +206,10 @@ class Handler(
             self.send_json({"ok": True, **refresh_data(False), "history_result": result})
         except ValueError as exc:
             self.send_json({"ok": False, "error": str(exc)}, status=400)
-        except StorageError:
-            raise
         except Exception as exc:
             self.send_json({"ok": False, "error": clean_text(str(exc))[:400]}, status=502)
 
-    def do_GET(self):
-        try:
-            self._do_GET()
-        except StorageError as exc:
-            self.send_json({"ok": False, "error": str(exc)}, status=503)
-
-    def _do_GET(
+    def do_GET(
         self
     ):
 
@@ -406,7 +384,7 @@ class Handler(
                             analysis,
 
                         "model":
-                            AI_MODEL,
+                            OLLAMA_MODEL,
 
                         "provider":
                             AI_PROVIDER_LABEL,
@@ -414,8 +392,6 @@ class Handler(
                 )
 
 
-            except StorageError:
-                raise
             except Exception as exc:
 
                 error_message = clean_text(
@@ -588,16 +564,13 @@ class Handler(
 
 def main():
 
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    display_host = "127.0.0.1" if HOST == "0.0.0.0" else HOST
-
     try:
-        server = RegIntelHTTPServer((HOST, PORT), Handler)
+        server = RegIntelHTTPServer(("127.0.0.1", PORT), Handler)
     except OSError as exc:
         if exc.errno != errno.EADDRINUSE and getattr(exc, "winerror", None) != 10048:
             raise
         print(f"RegIntel 未啟動：連接埠 {PORT} 已有服務使用。")
-        print(f"若 RegIntel 已在執行，請直接開啟 http://{display_host}:{PORT}")
+        print(f"若 RegIntel 已在執行，請直接開啟 http://127.0.0.1:{PORT}")
         print("如需重新啟動，請先停止原本的 RegIntel 服務，再執行 server.py。")
         return 1
 
@@ -618,83 +591,80 @@ def main():
     print(
         (
             "開啟網址："
-            f"http://{display_host}:{PORT}"
+            f"http://127.0.0.1:{PORT}"
         )
     )
 
-    print(f"監聽位址：{HOST}:{PORT}")
-    print(f"資料目錄：{DATA_DIR}")
 
     print(
         (
             "AI 分析："
-            f"{AI_PROVIDER_LABEL}（{AI_MODEL}）"
+            f"本機 Ollama（{OLLAMA_MODEL}）"
         )
     )
 
 
-    if AI_PROVIDER == "ollama":
-        ollama_status = (
-            probe_ollama()
+    ollama_status = (
+        probe_ollama()
+    )
+
+
+    if not ollama_status.get(
+        "reachable"
+    ):
+
+        print(
+            (
+                "Ollama 狀態：無法連線。"
+                "請先啟動 Ollama。"
+            )
+        )
+
+        print(
+            (
+                "若尚未下載模型，請執行："
+                f"ollama pull {OLLAMA_MODEL}"
+            )
         )
 
 
-        if not ollama_status.get(
-            "reachable"
-        ):
+    elif not ollama_status.get(
+        "model_installed"
+    ):
 
-            print(
-                (
-                    "Ollama 狀態：無法連線。"
-                    "請先啟動 Ollama。"
-                )
+        print(
+
+            (
+                "Ollama 狀態：已連線，"
+                f"但尚未找到模型 {OLLAMA_MODEL}。"
             )
+        )
 
-            print(
-                (
-                    "若尚未下載模型，請執行："
-                    f"ollama pull {OLLAMA_MODEL}"
-                )
+        print(
+            (
+                "請執行："
+                f"ollama pull {OLLAMA_MODEL}"
             )
+        )
 
 
-        elif not ollama_status.get(
-            "model_installed"
-        ):
+    else:
 
-            print(
-
-                (
-                    "Ollama 狀態：已連線，"
-                    f"但尚未找到模型 {OLLAMA_MODEL}。"
-                )
+        print(
+            (
+                "Ollama 狀態："
+                "已連線，模型已就緒。"
             )
+        )
 
-            print(
-                (
-                    "請執行："
-                    f"ollama pull {OLLAMA_MODEL}"
-                )
-            )
+        def warm_model():
+            try:
+                timing = preload_ollama()
+                print(f"Ollama 模型已預載（{timing['request_seconds']:.1f} 秒）。", flush=True)
+            except Exception as exc:
+                print(f"Ollama 預載未完成，首次分析時會再嘗試載入：{clean_text(str(exc))[:180]}", flush=True)
 
-
-        else:
-
-            print(
-                (
-                    "Ollama 狀態："
-                    "已連線，模型已就緒。"
-                )
-            )
-
-            def warm_model():
-                try:
-                    timing = preload_ollama()
-                    print(f"Ollama 模型已預載（{timing['request_seconds']:.1f} 秒）。", flush=True)
-                except Exception as exc:
-                    print(f"Ollama 預載未完成，首次分析時會再嘗試載入：{clean_text(str(exc))[:180]}", flush=True)
-
-            threading.Thread(target=warm_model, name="ollama-preload", daemon=True).start()
+        threading.Thread(target=warm_model, name="ollama-preload", daemon=True).start()
 
 
     print(

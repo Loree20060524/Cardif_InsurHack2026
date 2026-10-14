@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 import ssl
-import tempfile
 from pathlib import Path
 
 
@@ -16,32 +15,22 @@ from pathlib import Path
 # =========================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "10.23"
-
-# Keep deployed data on an attached volume; local runs keep their existing files.
-_data_directory = os.environ.get("REGINTEL_DATA_DIR", "").strip()
-IS_VERCEL = os.environ.get("VERCEL") == "1"
-DATA_DIR = (
-    (BASE_DIR / Path(_data_directory).expanduser()).resolve() if _data_directory
-    else Path(tempfile.gettempdir()) / "regintel" if IS_VERCEL
-    else BASE_DIR
-)
-HOST = os.environ.get("REGINTEL_HOST", "127.0.0.1").strip() or "127.0.0.1"
+APP_VERSION = "10.20"
 
 CACHE_FILE = (
-    DATA_DIR
+    BASE_DIR
     /
     "regintel_cache_v10.json"
 )
 
 SOURCE_STORE_FILE = (
-    DATA_DIR
+    BASE_DIR
     /
     "regintel_source_store_v10.json"
 )
 
 AI_CACHE_FILE = (
-    DATA_DIR
+    BASE_DIR
     /
     "regintel_ai_cache_v10.json"
 )
@@ -164,23 +153,13 @@ AI_PROMPT_VERSION = (
     "regintel-v10.15-official-announcement-content"
 )
 
-EVENT_HISTORY_FILE = DATA_DIR / "regintel_event_history_v10.json"
-LAW_VERSIONS_FILE = DATA_DIR / "regintel_law_versions_v1.json"
+EVENT_HISTORY_FILE = BASE_DIR / "regintel_event_history_v10.json"
+LAW_VERSIONS_FILE = BASE_DIR / "regintel_law_versions_v1.json"
 
 
-AI_PROVIDER = os.environ.get(
-    "REGINTEL_AI_PROVIDER", "gemini" if IS_VERCEL else "ollama"
-).strip().lower()
-if AI_PROVIDER not in {"ollama", "vercel_gateway", "gemini"}:
-    raise ValueError("REGINTEL_AI_PROVIDER 必須是 ollama、gemini 或 vercel_gateway。")
-AI_MODEL = (
-    os.environ.get("REGINTEL_AI_MODEL", "gemini-3.8-flash" if AI_PROVIDER == "gemini" else "alibaba/qwen-3-14b").strip()
-    if AI_PROVIDER != "ollama" else OLLAMA_MODEL
+AI_PROVIDER_LABEL = (
+    "Ollama（本機）"
 )
-AI_THINK = "low" if AI_PROVIDER == "gemini" else False if AI_PROVIDER == "vercel_gateway" else OLLAMA_THINK
-AI_PROVIDER_LABEL = {"gemini": "Google Gemini", "vercel_gateway": "Vercel AI Gateway", "ollama": "Ollama（本機）"}[AI_PROVIDER]
-AI_TIMEOUT = min(240, max(10, int(os.environ.get("REGINTEL_AI_TIMEOUT", os.environ.get("AI_GATEWAY_TIMEOUT", "180")))))
-AI_MAX_OUTPUT_TOKENS = min(8192, max(512, int(os.environ.get("REGINTEL_AI_MAX_TOKENS", os.environ.get("AI_GATEWAY_MAX_TOKENS", "4096")))))
 
 
 AI_ENABLED = True

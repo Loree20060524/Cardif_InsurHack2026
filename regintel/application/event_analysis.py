@@ -16,10 +16,10 @@ from ..domain.schemas import AI_ANALYSIS_SCHEMA
 from ..domain.law_changes import latest_amendment_record
 from ..domain.law_comparison import comparison_evidence, verified_change_summary
 from ..domain.text import clean_text, date_sort_key
-from ..infrastructure.json_store import atomic_write_json, document_transaction, load_json_file
+from ..infrastructure.json_store import atomic_write_json, load_json_file
 from ..infrastructure.attachment_text import fetch_event_attachment_text
 from ..infrastructure.announcement_content import fetch_announcement_content
-from ..infrastructure.model_client import call_structured_json
+from ..infrastructure.ollama import call_ollama_structured_json
 from .ai_support import (
     ai_event_cache_key,
     load_ai_cache,
@@ -385,7 +385,7 @@ def analyze_event_with_ai(
 
 
         result = (
-            call_structured_json(
+            call_ollama_structured_json(
 
                 instructions=
                     instructions,
@@ -434,7 +434,7 @@ def analyze_event_with_ai(
                 description,
             )
 
-        model_timing = result.get("_model_timing")
+        model_timing = result.get("_ollama_timing")
         if isinstance(model_timing, dict):
             analysis["generation_timing"] = {
                 **model_timing,
@@ -442,20 +442,29 @@ def analyze_event_with_ai(
                 "total_seconds": round(time.perf_counter() - started, 3),
             }
 
+        if analysis.get(
+            "analysis_mode"
+        ) == "AI 深度分析":
+
+            cache[
+                "analyses"
+            ][
+                cache_key
+            ] = analysis
+
+
         try:
 
             if analysis.get(
                 "analysis_mode"
             ) == "AI 深度分析":
 
-                # Re-read after generation so another instance's analysis or
-                # management summary cannot be overwritten by this response.
-                with document_transaction(AI_CACHE_FILE):
-                    latest_cache = load_ai_cache()
-                    latest_cache["analyses"][cache_key] = analysis
-                    atomic_write_json(AI_CACHE_FILE, latest_cache)
+                atomic_write_json(
+                    AI_CACHE_FILE,
+                    cache
+                )
 
-        except OSError:
+        except Exception:
 
             pass
 

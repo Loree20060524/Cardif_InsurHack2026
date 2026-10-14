@@ -134,7 +134,7 @@ class LawComparisonTests(unittest.TestCase):
              patch.object(event_analysis, "AI_CACHE_FILE", Path(directory) / "ai.json"), \
              patch.object(event_analysis, "load_ai_cache", return_value={"analyses": {}}), \
              patch.object(event_analysis, "get_law_comparisons", return_value=[comparison]), \
-             patch.object(event_analysis, "call_structured_json", return_value={}) as model, \
+             patch.object(event_analysis, "call_ollama_structured_json", return_value={}) as model, \
              patch.object(event_analysis, "sanitize_ai_analysis", return_value={"analysis_mode": "AI 深度分析", "summary": "新增未出現在差異中的要求。", "regulatory_points": ["新增未出現在差異中的要求。"]}):
             first = event_analysis.analyze_event_with_ai(event)
             second = event_analysis.analyze_event_with_ai(event)

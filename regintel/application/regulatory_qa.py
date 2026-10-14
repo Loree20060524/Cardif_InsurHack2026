@@ -7,11 +7,11 @@ import time
 import re
 from datetime import date
 
-from ..config import CACHE_FILE, EVENT_HISTORY_FILE, LAW_VERSIONS_FILE, SOURCE_STORE_FILE, AI_MODEL
+from ..config import CACHE_FILE, EVENT_HISTORY_FILE, LAW_VERSIONS_FILE, SOURCE_STORE_FILE, OLLAMA_MODEL
 from ..domain.knowledge_search import KnowledgeIndex, public_documents
 from ..domain.text import clean_text, now_iso
-from ..infrastructure.json_store import document_signature, load_json_file
-from ..infrastructure.model_client import call_structured_json
+from ..infrastructure.json_store import load_json_file
+from ..infrastructure.ollama import call_ollama_structured_json
 
 
 _CITATION_SCHEMA = {
@@ -89,7 +89,7 @@ def knowledge_index() -> KnowledgeIndex:
     global _index, _index_signature
     files = (CACHE_FILE, SOURCE_STORE_FILE, EVENT_HISTORY_FILE, LAW_VERSIONS_FILE)
     with _index_lock:
-        signature = document_signature(files)
+        signature = tuple((str(path), path.stat().st_mtime_ns, path.stat().st_size) if path.exists() else (str(path), 0, 0) for path in files)
         if _index is not None and signature == _index_signature:
             return _index
         events = []
@@ -160,7 +160,7 @@ def answer_regulatory_question(body: dict) -> dict:
                 for s in sources
             )
             generation_started = time.perf_counter()
-            result = call_structured_json(
+            result = call_ollama_structured_json(
                 instructions=QA_INSTRUCTIONS,
                 input_text=f"問題：{question}\n搜尋範圍：{filters}\n查詢時間：{now_iso()}\n\n{context}",
                 schema=QA_SCHEMA, context_window=16384,
@@ -178,7 +178,7 @@ def answer_regulatory_question(body: dict) -> dict:
     return {
         "question": question, "filters": filters, "status": "answered" if claims else "insufficient",
         "claims": claims, "sources": sources, "missing_information": missing,
-        "model": AI_MODEL if sources else "", "generated_at": now_iso(),
+        "model": OLLAMA_MODEL if sources else "", "generated_at": now_iso(),
         "scope": {"documents": index.document_count, "retrieved_documents": len({s["document_id"] for s in sources}), "passages": len(sources)},
         "timing": {"retrieval_seconds": round(retrieval_seconds, 3), "model_seconds": round(model_seconds, 3), "total_seconds": round(time.perf_counter() - started, 3)},
     }

@@ -41,7 +41,7 @@ class BaselineRecoveryTests(unittest.TestCase):
                 return_value={"analyses": {"key": cached}},
             ),
             patch.object(event_analysis, "fetch_event_attachment_text", return_value=""),
-            patch.object(event_analysis, "call_structured_json") as model,
+            patch.object(event_analysis, "call_ollama_structured_json") as model,
         ):
             result = event_analysis.analyze_event_with_ai(event)
 
@@ -58,7 +58,7 @@ class BaselineRecoveryTests(unittest.TestCase):
         with (
             patch.object(event_analysis, "load_ai_cache", return_value={"analyses": {}}),
             patch.object(event_analysis, "fetch_event_attachment_text", return_value=""),
-            patch.object(event_analysis, "call_structured_json") as model,
+            patch.object(event_analysis, "call_ollama_structured_json") as model,
         ):
             result = event_analysis.analyze_event_with_ai(event)
 
@@ -83,7 +83,7 @@ class BaselineRecoveryTests(unittest.TestCase):
                 "load_ai_cache",
                 return_value={"analyses": {"key": cached}},
             ),
-            patch.object(event_analysis, "call_structured_json") as model,
+            patch.object(event_analysis, "call_ollama_structured_json") as model,
         ):
             result = event_analysis.analyze_event_with_ai(event)
 
@@ -102,7 +102,7 @@ class BaselineRecoveryTests(unittest.TestCase):
         }
         with (
             patch.object(event_analysis, "load_ai_cache", return_value={"analyses": {}}),
-            patch.object(event_analysis, "call_structured_json", return_value={})
+            patch.object(event_analysis, "call_ollama_structured_json", return_value={})
             as model,
         ):
             event_analysis.analyze_event_with_ai(event)

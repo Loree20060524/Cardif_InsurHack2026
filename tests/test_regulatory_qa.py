@@ -71,7 +71,7 @@ class RegulatoryQATests(unittest.TestCase):
         self.assertIn("量子資訊", index.search("量子資訊設備", FILTERS)[0]["text"])
 
     def test_no_relevant_sources_does_not_call_model(self):
-        with patch.object(qa, "knowledge_index", return_value=self.index), patch.object(qa, "call_structured_json") as model:
+        with patch.object(qa, "knowledge_index", return_value=self.index), patch.object(qa, "call_ollama_structured_json") as model:
             result = qa.answer_regulatory_question({"question": "火星殖民太空船引擎", "filters": FILTERS})
         self.assertEqual(result["status"], "insufficient")
         self.assertEqual(result["claims"], [])
@@ -86,7 +86,7 @@ class RegulatoryQATests(unittest.TestCase):
                 {"source_id": "S99", "quote": "保險業辦理投資作業應建立內部控制制度"},
                 {"source_id": "S1", "quote": "投資決策不須任何覆核或查核紀錄"},
             ], "inferences": [{"text": "推測須加強覆核。", "citations": [{"source_id": "S1", "quote": "並保存投資決策與覆核紀錄。"}]}], "missing_information": []}
-        with patch.object(qa, "knowledge_index", return_value=self.index), patch.object(qa, "call_structured_json", side_effect=model):
+        with patch.object(qa, "knowledge_index", return_value=self.index), patch.object(qa, "call_ollama_structured_json", side_effect=model):
             result = qa.answer_regulatory_question({"question": "投資內控"})
         self.assertEqual([item["kind"] for item in result["claims"]], ["fact", "inference"])
         self.assertTrue(all(source["url"].startswith("https://www.fsc.gov.tw/") for source in result["sources"]))
@@ -94,7 +94,7 @@ class RegulatoryQATests(unittest.TestCase):
 
     def test_all_invalid_quotes_produce_insufficient_response(self):
         result = {"facts": [{"source_id": "S1", "quote": "官方已全面取消投資內控制度的要求"}], "inferences": []}
-        with patch.object(qa, "knowledge_index", return_value=self.index), patch.object(qa, "call_structured_json", return_value=result):
+        with patch.object(qa, "knowledge_index", return_value=self.index), patch.object(qa, "call_ollama_structured_json", return_value=result):
             answer = qa.answer_regulatory_question({"question": "投資內控"})
         self.assertEqual(answer["status"], "insufficient")
         self.assertEqual(answer["claims"], [])
@@ -142,7 +142,7 @@ class RegulatoryQATests(unittest.TestCase):
     def test_concurrent_question_returns_busy_without_starting_another_generation(self):
         qa._generation_lock.acquire()
         try:
-            with patch.object(qa, "knowledge_index", return_value=self.index), patch.object(qa, "call_structured_json") as model:
+            with patch.object(qa, "knowledge_index", return_value=self.index), patch.object(qa, "call_ollama_structured_json") as model:
                 with self.assertRaises(qa.QABusyError):
                     qa.answer_regulatory_question({"question": "投資內控"})
                 model.assert_not_called()
@@ -158,7 +158,7 @@ class RegulatoryQATests(unittest.TestCase):
                 qa.validate_question(body)
 
     def test_model_failure_releases_question_generation_lock(self):
-        with patch.object(qa, "knowledge_index", return_value=self.index), patch.object(qa, "call_structured_json", side_effect=RuntimeError("offline")):
+        with patch.object(qa, "knowledge_index", return_value=self.index), patch.object(qa, "call_ollama_structured_json", side_effect=RuntimeError("offline")):
             with self.assertRaises(RuntimeError):
                 qa.answer_regulatory_question({"question": "投資內控"})
         self.assertTrue(qa._generation_lock.acquire(blocking=False))
@@ -168,7 +168,7 @@ class RegulatoryQATests(unittest.TestCase):
         class QuietHandler(Handler):
             def log_message(self, *_args):
                 pass
-        with patch.object(qa, "knowledge_index", return_value=self.index), patch.object(qa, "call_structured_json") as model:
+        with patch.object(qa, "knowledge_index", return_value=self.index), patch.object(qa, "call_ollama_structured_json") as model:
             server = ThreadingHTTPServer(("127.0.0.1", 0), QuietHandler)
             worker = threading.Thread(target=server.serve_forever, daemon=True)
             worker.start()

@@ -16,7 +16,7 @@
 
 ## 啟動
 
-預設使用本機 Ollama 與 qwen3:4b：
+預設使用本機 Ollama 與 qwen3:4b，可直接用一般 Python 啟動，不需要建立或啟用虛擬環境：
 
 ```powershell
 ollama pull qwen3:4b
@@ -30,13 +30,11 @@ python server.py
 http://127.0.0.1:8082
 ```
 
+啟動後保持終端機開啟；看到「Ollama 模型已預載」即可使用網站，不需要再按一次執行按鈕。關閉服務時按 Ctrl+C。
+
 目前版本為 **RegIntel v10.20**。更新後，先在原本執行服務的視窗按 Ctrl+C，再執行此資料夾的 server.py；瀏覽器按 Ctrl＋F5 載入新版頁面。
 
 若啟動時提示連接埠已有服務，請直接開啟原本的網址，或先停止舊程序再重新啟動。
-
-Vercel 正式網站與 API 已部署，專案支援 Neon／PostgreSQL 持久化儲存。本機五份資料已完成搬移與核對；**雲端 AI 仍待接入**。資料庫連線、搬移工具與正式站的驗證方式見 [Vercel 部署與資料保存](docs/vercel-deployment.md)。
-
-其他 Python 主機可設定 `REGINTEL_HOST=0.0.0.0`、主機提供的 `PORT`，以及指向持久化磁碟的 `REGINTEL_DATA_DIR`。本機預設位置不變，詳見 [一般雲端部署設定](docs/cloud-deployment.md)。
 
 ### 模型與附件
 
