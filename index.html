@@ -1175,37 +1175,39 @@ button {
                                     <span class="advanced-filter-chevron" aria-hidden="true">⌄</span>
                                 </button>
                                 <div class="advanced-filter-panel hidden" id="advancedFilterPanel">
-                                    <div class="advanced-filter-header">
-                                        <strong>篩選監理資訊</strong>
-                                        <small>可複選條件</small>
-                                    </div>
-                                    <div class="advanced-filter-section">
-                                        <div class="advanced-filter-label">
-                                            <strong>資訊類型</strong>
-                                            <small>同類條件擇一符合</small>
+                                    <div class="advanced-filter-body">
+                                        <div class="advanced-filter-header">
+                                            <strong>篩選監理資訊</strong>
+                                            <small>可複選條件</small>
                                         </div>
-                                        <div class="advanced-filter-options" id="typeFilterOptions"></div>
-                                    </div>
-                                    <div class="advanced-filter-section">
-                                        <div class="advanced-filter-label">
-                                            <strong>主要責任部門</strong>
-                                            <small>同類條件擇一符合</small>
+                                        <div class="advanced-filter-section">
+                                            <div class="advanced-filter-label">
+                                                <strong>資訊類型</strong>
+                                                <small>同類條件擇一符合</small>
+                                            </div>
+                                            <div class="advanced-filter-options" id="typeFilterOptions"></div>
                                         </div>
-                                        <div class="advanced-filter-options" id="departmentFilterOptions"></div>
-                                    </div>
-                                    <div class="advanced-filter-section">
-                                        <div class="advanced-filter-label">
-                                            <strong>風險程度</strong>
-                                            <small>同類條件擇一符合</small>
+                                        <div class="advanced-filter-section">
+                                            <div class="advanced-filter-label">
+                                                <strong>主要責任部門</strong>
+                                                <small>同類條件擇一符合</small>
+                                            </div>
+                                            <div class="advanced-filter-options" id="departmentFilterOptions"></div>
                                         </div>
-                                        <div class="advanced-filter-options" id="riskFilterOptions"></div>
-                                    </div>
-                                    <div class="advanced-filter-section">
-                                        <div class="advanced-filter-label">
-                                            <strong>重要性</strong>
-                                            <small>同類條件擇一符合</small>
+                                        <div class="advanced-filter-section">
+                                            <div class="advanced-filter-label">
+                                                <strong>風險程度</strong>
+                                                <small>同類條件擇一符合</small>
+                                            </div>
+                                            <div class="advanced-filter-options" id="riskFilterOptions"></div>
                                         </div>
-                                        <div class="advanced-filter-options" id="importanceFilterOptions"></div>
+                                        <div class="advanced-filter-section">
+                                            <div class="advanced-filter-label">
+                                                <strong>重要性</strong>
+                                                <small>同類條件擇一符合</small>
+                                            </div>
+                                            <div class="advanced-filter-options" id="importanceFilterOptions"></div>
+                                        </div>
                                     </div>
                                     <div class="advanced-filter-actions">
                                         <span id="advancedFilterDraftSummary">尚未選擇條件</span>
@@ -1270,7 +1272,7 @@ button {
             <div class="d-heading">
                 <div>
                     <h2>管理摘要</h2>
-                    <p>勾選想要納入的公告、法規或新聞，由 AI 彙整所選資訊的重點與可能影響。</p>
+                    <p>選取一筆或多筆監理資訊，由 AI 彙整管理重點、可能影響與因應方向。</p>
                 </div>
             </div>
 
@@ -1317,7 +1319,7 @@ button {
                     <div id="reportBox" class="report-box" tabindex="-1" aria-busy="false">
                         <div class="management-report-empty">
                             <strong>尚未產生摘要</strong>
-                            <p>勾選資訊後產生摘要，結果會附本次使用的官方來源。</p>
+                            <p>選取一筆或多筆資訊後產生摘要，結果會附本次使用的官方來源。</p>
                         </div>
                     </div>
                 </section>

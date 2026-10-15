@@ -21,6 +21,31 @@ function selectedManagementEvents(){
     return [...state.managementSelection].map(id => byId.get(id)).filter(Boolean);
 }
 
+function addToManagementSummary(event){
+    if(state.managementReportLoading || state.history.loading){
+        toast('資料載入或摘要產生中，請稍候再加入資訊。');
+        return;
+    }
+    const index = managementEvents().findIndex(item => item.id === event.id);
+    if(index < 0){
+        toast('這筆資訊已不在目前清單，請更新後再試。');
+        return;
+    }
+    state.managementSelection.add(event.id);
+    state.managementQuery = '';
+    state.managementType = '全部';
+    state.pagination.management.page = Math.floor(index / state.pagination.management.size) + 1;
+    showView('management');
+    $('managementView').scrollIntoView({block:'start'});
+    const checkbox = [...$('priorityList').querySelectorAll('[data-management-event]')]
+        .find(input => input.dataset.managementEvent === event.id);
+    if(checkbox){
+        checkbox.focus({preventScroll:true});
+        checkbox.closest('label').scrollIntoView({block:'nearest'});
+    }
+    toast(`已加入管理摘要，目前已選 ${selectedManagementEvents().length} 筆資訊。`);
+}
+
 function updateManagementSelection(){
     const count = selectedManagementEvents().length;
     const matching = filteredManagementEvents();
@@ -30,7 +55,7 @@ function updateManagementSelection(){
     $('managementSelectionHint').textContent = state.managementReportLoading
         ? `正在彙整已選擇的 ${count} 筆資訊，資料較多時需較長時間。`
         : state.history.loading ? '正在載入更早資料，已保留您的跨頁選取。'
-        : count ? '摘要將使用所有勾選資訊；翻頁、搜尋或切換類型會保留已選項目。' : '可跨頁勾選資訊，再產生摘要。';
+        : count ? '摘要將使用所有勾選資訊；翻頁、搜尋或切換類型會保留已選項目。' : '可選擇一筆或多筆資訊；跨頁勾選會保留。';
     $('reportBtn').disabled = loading || !count;
     $('reportBtn').textContent = state.managementReportLoading ? '產生中…' : '產生管理摘要';
     $('selectManagementVisible').disabled = loading || !visible.length || visible.every(event => state.managementSelection.has(event.id));

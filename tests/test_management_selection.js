@@ -7,6 +7,8 @@ const vm = require('node:vm');
 function boot(returnedIds = ['event-9', 'event-2']) {
     const elements = new Map();
     const requests = [];
+    const views = [];
+    const messages = [];
     const document = {getElementById(id) {
         if(!elements.has(id)) elements.set(id, {
             innerHTML:'', textContent:'', value:'', disabled:false,
@@ -18,6 +20,8 @@ function boot(returnedIds = ['event-9', 'event-2']) {
     }};
     const context = vm.createContext({
         document, URLSearchParams, URL, console:{error(){}},
+        showView:view => views.push(view),
+        toast:message => messages.push(message),
         fetch:async (url, options) => {
             requests.push({url, ...options});
             return {ok:true, json:async () => ({ok:true, summary:{
@@ -33,7 +37,7 @@ function boot(returnedIds = ['event-9', 'event-2']) {
         id:'event-'+i, title:'資訊 '+i, source_key:'reg_news',
         published_at:'2026-10-02T00:00:00+08:00'
     }));`, context);
-    return {context, elements, requests};
+    return {context, elements, requests, views, messages};
 }
 
 test('summary request uses exactly the manually selected events, including one outside the old shortlist', async () => {
@@ -64,4 +68,44 @@ test('a report with a different source selection is rejected and the selection s
     assert.match(app.elements.get('reportBox').innerHTML, /資訊與所選項目不一致/);
     assert.equal(vm.runInContext("state.managementSelection.has('event-9')", app.context), true);
     assert.equal(app.elements.get('reportBtn').disabled, false);
+});
+
+test('adding a detail event preserves existing selections and reveals its page without generating a report', () => {
+    const app = boot();
+    vm.runInContext(`state.managementSelection.add('event-2');
+        state.managementQuery = 'unmatched';
+        state.managementType = '法規';
+        state.pagination.management.size = 3;
+        addToManagementSummary(state.events[9]);
+        addToManagementSummary(state.events[9]);`, app.context);
+
+    assert.deepEqual([...vm.runInContext('state.managementSelection', app.context)], ['event-2', 'event-9']);
+    assert.equal(vm.runInContext('state.managementQuery', app.context), '');
+    assert.equal(vm.runInContext('state.managementType', app.context), '全部');
+    assert.equal(vm.runInContext('state.pagination.management.page', app.context), 4);
+    assert.deepEqual(app.views, ['management', 'management']);
+    assert.equal(app.requests.length, 0);
+    assert.match(app.messages.at(-1), /已選 2 筆/);
+});
+
+test('adding a detail event cannot alter the selection during a report or history request', () => {
+    for(const busy of ['state.managementReportLoading', 'state.history.loading']){
+        const app = boot();
+        vm.runInContext(`state.managementSelection.add('event-2');
+            ${busy} = true;
+            addToManagementSummary(state.events[9]);`, app.context);
+        assert.deepEqual([...vm.runInContext('state.managementSelection', app.context)], ['event-2']);
+        assert.equal(app.views.length, 0);
+        assert.equal(app.requests.length, 0);
+        assert.match(app.messages[0], /請稍候/);
+    }
+});
+
+test('an event no longer in the loaded sources is not added to the management report', () => {
+    const app = boot();
+    vm.runInContext("addToManagementSummary({id:'removed-event'});", app.context);
+    assert.equal(vm.runInContext('state.managementSelection.size', app.context), 0);
+    assert.equal(app.views.length, 0);
+    assert.equal(app.requests.length, 0);
+    assert.match(app.messages[0], /已不在目前清單/);
 });

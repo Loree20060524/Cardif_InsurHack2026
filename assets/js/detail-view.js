@@ -692,10 +692,10 @@ function renderDetail(
 
                 class="btn primary"
 
-                id="makeBrief"
+                id="addToManagement"
             >
 
-                產生主管摘要
+                加入管理摘要
 
             </button>
 
@@ -714,13 +714,15 @@ function renderDetail(
 
         </div>
 
+        <p class="detail-actions-note">可在管理摘要頁選擇一筆或多筆資訊，再產生報告。</p>
+
 
     `;
 
 
-    $('makeBrief').onclick =
+    $('addToManagement').onclick =
         () =>
-            showSingleBrief(
+            addToManagementSummary(
                 event
             );
 
@@ -772,117 +774,4 @@ function renderDetail(
             event
         );
     }
-}
-
-
-/* =====================================================
-   Single Event Brief
-===================================================== */
-
-function showSingleBrief(
-    event
-){
-
-    const analysis =
-        event.analysis
-        ||
-        {};
-
-
-    const departments = (
-
-        analysis.departments
-        ||
-        []
-
-    )
-    .slice(
-        0,
-        3
-    )
-    .map(
-
-        item =>
-            departmentLabel(
-                item.department
-            )
-    )
-    .join(
-        '、'
-    )
-
-    ||
-
-    '待確認';
-
-
-    const processes = (
-
-        analysis.impact_processes
-        ||
-        []
-
-    )
-    .slice(
-        0,
-        3
-    )
-    .map(
-
-        item =>
-            item.process
-    )
-    .join(
-        '、'
-    )
-
-    ||
-
-    '待確認';
-
-
-    const mainDepartment =
-        departmentLabel(
-
-            analysis.responsible_department
-
-            ||
-
-            analysis.departments?.[0]?.department
-
-            ||
-
-            '待確認'
-        );
-
-
-    alert(
-
-`${
-    analysis.analysis_mode === 'AI 深度分析'
-    ?
-    'AI 主管摘要'
-    :
-    '主管摘要（規則備援）'
-}
-
-事件：${event.title}
-
-事件類型：${analysis.event_nature || sourceType(event)}
-
-風險程度：${analysis.risk_level || '待確認'}
-
-重要性：${analysis.importance || '待確認'}
-
-主要責任部門：${mainDepartment}
-
-可能受影響部門：${departments}
-
-可能受影響流程：${processes}
-
-主管重點：${analysis.management_summary || analysis.summary || '待確認'}
-
-※ AI／系統分析供初步研判，最終判斷仍應由相關單位確認。`
-
-    );
 }
