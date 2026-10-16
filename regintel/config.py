@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import shutil
 import ssl
+import tempfile
 from pathlib import Path
 
 
@@ -15,22 +17,40 @@ from pathlib import Path
 # =========================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "10.20"
+APP_VERSION = "10.22"
+
+# Local secrets stay outside source control. Vercel injects its own variables.
+if not os.environ.get("VERCEL"):
+    local_env = BASE_DIR / ".env.local"
+    if local_env.is_file():
+        for line in local_env.read_text(encoding="utf-8-sig").splitlines():
+            name, separator, value = line.strip().partition("=")
+            if separator and name in {"AI_PROVIDER", "GROQ_API_KEY", "GROQ_MODEL", "GROQ_TIMEOUT", "GROQ_REASONING_EFFORT"}:
+                os.environ.setdefault(name, value.strip().strip("\"'"))
+
+IS_VERCEL = os.environ.get("VERCEL") == "1"
+DATA_DIR = Path(tempfile.gettempdir()) / "regintel" if IS_VERCEL else BASE_DIR
+if IS_VERCEL:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    for name in ("regintel_cache_v10.json", "regintel_source_store_v10.json", "regintel_event_history_v10.json", "regintel_law_versions_v1.json"):
+        seed = BASE_DIR / "deployment_data" / name
+        if seed.is_file() and not (DATA_DIR / name).exists():
+            shutil.copyfile(seed, DATA_DIR / name)
 
 CACHE_FILE = (
-    BASE_DIR
+    DATA_DIR
     /
     "regintel_cache_v10.json"
 )
 
 SOURCE_STORE_FILE = (
-    BASE_DIR
+    DATA_DIR
     /
     "regintel_source_store_v10.json"
 )
 
 AI_CACHE_FILE = (
-    BASE_DIR
+    DATA_DIR
     /
     "regintel_ai_cache_v10.json"
 )
@@ -153,13 +173,21 @@ AI_PROMPT_VERSION = (
     "regintel-v10.15-official-announcement-content"
 )
 
-EVENT_HISTORY_FILE = BASE_DIR / "regintel_event_history_v10.json"
-LAW_VERSIONS_FILE = BASE_DIR / "regintel_law_versions_v1.json"
+EVENT_HISTORY_FILE = DATA_DIR / "regintel_event_history_v10.json"
+LAW_VERSIONS_FILE = DATA_DIR / "regintel_law_versions_v1.json"
 
 
-AI_PROVIDER_LABEL = (
-    "Ollama（本機）"
-)
+AI_PROVIDER = os.environ.get("AI_PROVIDER", "groq" if os.environ.get("GROQ_API_KEY") else "ollama").strip().lower()
+if AI_PROVIDER not in {"ollama", "groq"}:
+    raise ValueError("AI_PROVIDER 必須是 ollama 或 groq。")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b").strip()
+GROQ_TIMEOUT = int(os.environ.get("GROQ_TIMEOUT", "90"))
+GROQ_REASONING_EFFORT = os.environ.get("GROQ_REASONING_EFFORT", "low").strip().lower()
+if GROQ_REASONING_EFFORT not in {"low", "medium", "high"}:
+    raise ValueError("GROQ_REASONING_EFFORT 必須是 low、medium 或 high。")
+AI_MODEL = GROQ_MODEL if AI_PROVIDER == "groq" else OLLAMA_MODEL
+AI_PROVIDER_LABEL = "Groq（雲端）" if AI_PROVIDER == "groq" else "Ollama（本機）"
 
 
 AI_ENABLED = True

@@ -22,6 +22,14 @@ tmp/
 .pytest_cache/
 .coverage
 htmlcov/
+public/
+# Only public source snapshots are tracked for GitHub/Vercel builds.
+/deployment_data/*
+!/deployment_data/regintel_cache_v10.json
+!/deployment_data/regintel_source_store_v10.json
+!/deployment_data/regintel_event_history_v10.json
+!/deployment_data/regintel_law_versions_v1.json
+.vercel/
 
 # Editor and operating-system files
 .idea/

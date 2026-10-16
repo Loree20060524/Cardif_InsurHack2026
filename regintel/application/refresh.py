@@ -13,8 +13,9 @@ from ..config import (
     CACHE_FILE,
     CACHE_TTL_SECONDS,
     MANUAL_REFRESH_COOLDOWN_SECONDS,
-    OLLAMA_MODEL,
+    AI_MODEL,
     SOURCE_STORE_FILE,
+    IS_VERCEL,
 )
 from ..domain.event_selection import select_visible_events
 from ..domain.law_changes import (
@@ -47,6 +48,18 @@ _last_manual_refresh_ts = 0.0
 def invalidate_refresh_cache():
     with _cache_lock:
         _mem_cache["timestamp"] = 0.0
+
+
+def deployment_snapshot() -> dict[str, Any] | None:
+    """Serve the public snapshot immediately on a serverless cold start."""
+    if not IS_VERCEL:
+        return None
+    payload = load_json_file(CACHE_FILE)
+    if not isinstance(payload.get("events"), list) or not payload["events"]:
+        return None
+    payload["ai"] = {"enabled": True, "mode": "按需 AI 深度分析", "model": AI_MODEL, "provider": AI_PROVIDER_LABEL}
+    payload["deployment_snapshot"] = True
+    return payload
 
 
 # =========================================================
@@ -113,6 +126,11 @@ def refresh_data(
     str,
     Any
 ]:
+
+    if not force:
+        snapshot = deployment_snapshot()
+        if snapshot is not None:
+            return snapshot
 
     global _last_manual_refresh_ts
 
@@ -1181,7 +1199,7 @@ def refresh_data(
                     "按需 AI 深度分析",
 
                 "model":
-                    OLLAMA_MODEL,
+                    AI_MODEL,
 
                 "provider":
                     AI_PROVIDER_LABEL,

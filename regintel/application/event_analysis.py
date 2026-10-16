@@ -19,7 +19,7 @@ from ..domain.text import clean_text, date_sort_key
 from ..infrastructure.json_store import atomic_write_json, load_json_file
 from ..infrastructure.attachment_text import fetch_event_attachment_text
 from ..infrastructure.announcement_content import fetch_announcement_content
-from ..infrastructure.ollama import call_ollama_structured_json
+from ..infrastructure.ai import call_structured_json
 from .ai_support import (
     ai_event_cache_key,
     load_ai_cache,
@@ -385,7 +385,7 @@ def analyze_event_with_ai(
 
 
         result = (
-            call_ollama_structured_json(
+            call_structured_json(
 
                 instructions=
                     instructions,
@@ -434,7 +434,7 @@ def analyze_event_with_ai(
                 description,
             )
 
-        model_timing = result.get("_ollama_timing")
+        model_timing = result.get("_model_timing", result.get("_ollama_timing"))
         if isinstance(model_timing, dict):
             analysis["generation_timing"] = {
                 **model_timing,

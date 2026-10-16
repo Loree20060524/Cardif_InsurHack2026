@@ -7,11 +7,11 @@ import time
 import re
 from datetime import date
 
-from ..config import CACHE_FILE, EVENT_HISTORY_FILE, LAW_VERSIONS_FILE, SOURCE_STORE_FILE, OLLAMA_MODEL
+from ..config import CACHE_FILE, EVENT_HISTORY_FILE, LAW_VERSIONS_FILE, SOURCE_STORE_FILE, AI_MODEL
 from ..domain.knowledge_search import KnowledgeIndex, public_documents
 from ..domain.text import clean_text, now_iso
 from ..infrastructure.json_store import load_json_file
-from ..infrastructure.ollama import call_ollama_structured_json
+from ..infrastructure.ai import call_structured_json
 
 
 _CITATION_SCHEMA = {
@@ -160,7 +160,7 @@ def answer_regulatory_question(body: dict) -> dict:
                 for s in sources
             )
             generation_started = time.perf_counter()
-            result = call_ollama_structured_json(
+            result = call_structured_json(
                 instructions=QA_INSTRUCTIONS,
                 input_text=f"問題：{question}\n搜尋範圍：{filters}\n查詢時間：{now_iso()}\n\n{context}",
                 schema=QA_SCHEMA, context_window=16384,
@@ -178,7 +178,7 @@ def answer_regulatory_question(body: dict) -> dict:
     return {
         "question": question, "filters": filters, "status": "answered" if claims else "insufficient",
         "claims": claims, "sources": sources, "missing_information": missing,
-        "model": OLLAMA_MODEL if sources else "", "generated_at": now_iso(),
+        "model": AI_MODEL if sources else "", "generated_at": now_iso(),
         "scope": {"documents": index.document_count, "retrieved_documents": len({s["document_id"] for s in sources}), "passages": len(sources)},
         "timing": {"retrieval_seconds": round(retrieval_seconds, 3), "model_seconds": round(model_seconds, 3), "total_seconds": round(time.perf_counter() - started, 3)},
     }

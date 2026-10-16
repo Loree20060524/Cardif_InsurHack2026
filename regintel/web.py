@@ -17,10 +17,11 @@ from .application.regulatory_qa import QABusyError, answer_regulatory_question
 from .application.refresh import invalidate_refresh_cache, refresh_data
 from .application.event_history import load_older_events
 from .application.law_comparison import get_law_comparisons
-from .config import AI_PROMPT_VERSION, AI_PROVIDER_LABEL, APP_VERSION, BASE_DIR, OLLAMA_MODEL, PORT
+from .config import AI_PROMPT_VERSION, AI_PROVIDER_LABEL, AI_PROVIDER, GROQ_API_KEY, APP_VERSION, BASE_DIR, AI_MODEL, PORT
 from .domain.risk_analysis import rule_based_analyze_event
 from .domain.text import clean_text, now_iso
 from .infrastructure.ollama import preload_ollama, probe_ollama
+from .infrastructure.groq import ModelServiceError
 
 
 # =========================================================
@@ -194,8 +195,10 @@ class Handler(
                 self.send_json({"ok": False, "error": str(exc)}, status=400)
             except QABusyError as exc:
                 self.send_json({"ok": False, "error": str(exc)}, status=429)
+            except ModelServiceError as exc:
+                self.send_json({"ok": False, "error": str(exc)}, status=exc.status)
             except Exception:
-                self.send_json({"ok": False, "error": "AI 問答暫時無法完成，請確認本機 Ollama 與模型已啟動後再試。"}, status=502)
+                self.send_json({"ok": False, "error": "AI 問答暫時無法完成，請稍後再試；若持續發生，請確認伺服器的模型服務設定。"}, status=502)
             return
         if path == "/api/management-summary":
             self.send_management_summary(body.get("event_ids"))
@@ -384,7 +387,7 @@ class Handler(
                             analysis,
 
                         "model":
-                            OLLAMA_MODEL,
+                            AI_MODEL,
 
                         "provider":
                             AI_PROVIDER_LABEL,
@@ -530,6 +533,9 @@ class Handler(
                     "version":
                         APP_VERSION,
                     "analysis_prompt_version": AI_PROMPT_VERSION,
+                    "ai_provider": AI_PROVIDER_LABEL,
+                    "ai_model": AI_MODEL,
+                    "ai_configured": bool(GROQ_API_KEY) if AI_PROVIDER == "groq" else True,
                 }
             )
 
@@ -599,17 +605,17 @@ def main():
     print(
         (
             "AI 分析："
-            f"本機 Ollama（{OLLAMA_MODEL}）"
+            f"{AI_PROVIDER_LABEL}（{AI_MODEL}）"
         )
     )
 
 
-    ollama_status = (
-        probe_ollama()
-    )
+    ollama_status = probe_ollama() if AI_PROVIDER == "ollama" else {}
 
 
-    if not ollama_status.get(
+    if AI_PROVIDER == "groq":
+        print("Groq 狀態：API key 已設定。" if GROQ_API_KEY else "Groq 狀態：尚未設定 GROQ_API_KEY。")
+    elif not ollama_status.get(
         "reachable"
     ):
 
@@ -623,7 +629,7 @@ def main():
         print(
             (
                 "若尚未下載模型，請執行："
-                f"ollama pull {OLLAMA_MODEL}"
+                f"ollama pull {AI_MODEL}"
             )
         )
 
@@ -636,14 +642,14 @@ def main():
 
             (
                 "Ollama 狀態：已連線，"
-                f"但尚未找到模型 {OLLAMA_MODEL}。"
+                f"但尚未找到模型 {AI_MODEL}。"
             )
         )
 
         print(
             (
                 "請執行："
-                f"ollama pull {OLLAMA_MODEL}"
+                f"ollama pull {AI_MODEL}"
             )
         )
 

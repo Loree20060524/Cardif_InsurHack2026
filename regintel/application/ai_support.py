@@ -12,7 +12,9 @@ from ..config import (
     AI_CACHE_FILE,
     AI_PROMPT_VERSION,
     AI_PROVIDER_LABEL,
-    OLLAMA_MODEL,
+    AI_PROVIDER,
+    GROQ_REASONING_EFFORT,
+    AI_MODEL,
     OLLAMA_THINK,
 )
 from ..domain.rules import AI_ALLOWED_DEPARTMENTS
@@ -122,13 +124,14 @@ def ai_event_cache_key(
 
     material = {
 
-        "thinking": OLLAMA_THINK,
+        "provider": AI_PROVIDER,
+        "thinking": OLLAMA_THINK if AI_PROVIDER == "ollama" else GROQ_REASONING_EFFORT,
 
         "prompt_version":
             AI_PROMPT_VERSION,
 
         "model":
-            OLLAMA_MODEL,
+            AI_MODEL,
 
         "id":
             event.get(
@@ -620,7 +623,7 @@ def sanitize_ai_analysis(
 
         "ai_model":
             (
-                OLLAMA_MODEL
+                AI_MODEL
                 if ai_is_substantive
                 else
                 ""

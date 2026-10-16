@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "python scripts/prepare_vercel.py",
+  "outputDirectory": "public",
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 300,
+      "includeFiles": "{regintel/**,deployment_data/**}",
+      "excludeFiles": "{tests/**,research/**,prototypes/**,tmp/**,.env*,regintel_*.json,public/**}"
+    }
+  },
+  "rewrites": [{"source": "/api/:path*", "destination": "/api/index"}]
+}

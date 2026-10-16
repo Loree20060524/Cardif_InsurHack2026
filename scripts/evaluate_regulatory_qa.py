@@ -1,4 +1,4 @@
-"""Measure retrieval and optionally local model answers without altering caches."""
+"""Measure retrieval and configured model answers without altering caches."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ CASES = [
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--live", action="store_true", help="Also generate two answers with the configured local Ollama model")
+    parser.add_argument("--live", action="store_true", help="Also generate two answers with the configured AI provider")
     parser.add_argument("--output", default="tmp/qa/evaluation.json")
     args = parser.parse_args()
     started = time.perf_counter()

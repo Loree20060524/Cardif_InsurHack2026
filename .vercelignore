@@ -1,0 +1,15 @@
+.git
+.env*
+.venv
+venv
+__pycache__
+**/__pycache__
+*.pyc
+tmp
+tests
+research
+docs
+prototypes
+/regintel_*.json
+public
+.vscode

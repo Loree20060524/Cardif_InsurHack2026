@@ -1,6 +1,6 @@
 # RegIntel — 保險業監理情報與風險預警平台
 
-整合官方公告、法規、裁罰與監理新聞，以本機 Ollama 提供 AI 重點分析與使用者選取資訊的管理摘要。
+整合官方公告、法規、裁罰與監理新聞，以 Groq GPT-OSS 120B 或本機 Ollama 提供 AI 重點分析、監理問答與管理摘要。
 
 ## 主要功能
 
@@ -15,6 +15,30 @@
 公司作業檢查、SOP 上傳及文件比對已移除。平台目前以公開監理資料為分析範圍，沒有公司文件上傳入口；舊的文件解析、比對及私有摘要 API 回傳 HTTP 410。
 
 ## 啟動
+
+### Groq GPT-OSS 120B
+
+複製 `.env.example` 為 `.env.local`，填入 `GROQ_API_KEY`，再執行 `python server.py`。`.env.local` 已排除 Git 及部署上傳，只由 Python 後端讀取。模型預設為 `openai/gpt-oss-120b`，推理程度預設 `low`；可將 `GROQ_REASONING_EFFORT` 設為 `medium` 或 `high`。所有 AI 功能共用所選供應商，保留原文引用檢查。
+
+### 部署至 Vercel
+
+在專案的 Production 與 Preview 環境設定 `AI_PROVIDER=groq`、`GROQ_MODEL=openai/gpt-oss-120b`，將 `GROQ_API_KEY` 設為敏感環境變數。金鑰不放在前端或 `vercel.json`。
+
+```powershell
+python scripts/prepare_vercel.py
+vercel link --project cardif-insur-hack2026
+vercel deploy --prod
+```
+
+部署前先在本機更新官方資料並執行準備腳本。腳本只把頁面與 assets 複製到公開目錄，四份官方資料快照放入後端 bundle；不帶入舊模型的 AI 分析快取。`deployment_data/` 僅允許這四份公開來源 JSON 納入 Git，供 Vercel 從 GitHub 建置時使用。更新快照後，將它們與程式一併提交。
+
+Vercel 已連接 `Loree20060524/Cardif_InsurHack2026`，正式部署分支為 `main`。推送 `main` 後會自動建置，成功後更新正式網址；其他分支只產生預覽部署。Vercel 已保存的 Groq 環境變數會繼續使用，本機 `.env.local` 不納入 Git。
+
+Vercel 的讀寫快取放在 `/tmp`，一般瀏覽直接使用已收錄快照，手動更新仍可讀取官方來源。快取不會跨執行個體或重新部署永久保存；新執行個體使用提交的資料快照。若要永久保存雲端更新與 AI 快取，需再接外部資料庫。
+
+`/api/health` 回報目前供應商、模型與金鑰是否設定，不回傳金鑰值。
+
+### 本機 Ollama
 
 預設使用本機 Ollama 與 qwen3:4b，可直接用一般 Python 啟動，不需要建立或啟用虛擬環境：
 
@@ -32,7 +56,7 @@ http://127.0.0.1:8082
 
 啟動後保持終端機開啟；看到「Ollama 模型已預載」即可使用網站，不需要再按一次執行按鈕。關閉服務時按 Ctrl+C。
 
-目前版本為 **RegIntel v10.20**。更新後，先在原本執行服務的視窗按 Ctrl+C，再執行此資料夾的 server.py；瀏覽器按 Ctrl＋F5 載入新版頁面。
+目前版本為 **RegIntel v10.22**。更新後，先在原本執行服務的視窗按 Ctrl+C，再執行此資料夾的 server.py；瀏覽器按 Ctrl＋F5 載入新版頁面。
 
 若啟動時提示連接埠已有服務，請直接開啟原本的網址，或先停止舊程序再重新啟動。
 

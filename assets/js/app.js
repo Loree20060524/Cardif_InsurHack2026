@@ -188,7 +188,9 @@ async function loadEvents(
         else if(force){
 
             toast(
-                '最新監理資訊已更新。'
+                state.stale
+                    ? '部分來源更新失敗，已保留可用資料；可在「來源狀態」查看原因。'
+                    : '最新監理資訊已更新。'
             );
         }
 
@@ -217,11 +219,11 @@ async function loadEvents(
             (
                 '<strong>'
                 +
-                '無法連到本機資料服務。'
+                '目前無法取得監理資料。'
                 +
                 '</strong> '
                 +
-                '請確認 server.py 是否仍在執行。'
+                '請稍後重新整理頁面；若持續發生，請確認網站後端服務狀態。'
             );
 
 
