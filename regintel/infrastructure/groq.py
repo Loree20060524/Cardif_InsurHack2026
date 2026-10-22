@@ -21,7 +21,8 @@ class ModelServiceError(RuntimeError):
         self.status = status
 
 
-def call_groq_structured_json(*, instructions: str, input_text: str, schema: dict[str, Any]) -> dict[str, Any]:
+def call_groq_structured_json(*, instructions: str, input_text: str, schema: dict[str, Any],
+                              max_output_tokens: int | None = None, request_timeout: float | None = None) -> dict[str, Any]:
     if not GROQ_API_KEY:
         raise RuntimeError("尚未設定 GROQ_API_KEY，請設定伺服器環境變數後再試。")
     body = {
@@ -30,7 +31,7 @@ def call_groq_structured_json(*, instructions: str, input_text: str, schema: dic
         "response_format": {"type": "json_schema", "json_schema": {"name": "regintel_response", "strict": True, "schema": schema}},
         "temperature": 0,
         "reasoning_effort": GROQ_REASONING_EFFORT,
-        "max_completion_tokens": 8192,
+        "max_completion_tokens": max_output_tokens if max_output_tokens is not None else 8192,
         "stream": False,
     }
     request = urllib.request.Request(
@@ -39,7 +40,7 @@ def call_groq_structured_json(*, instructions: str, input_text: str, schema: dic
     )
     started = time.perf_counter()
     try:
-        with urllib.request.urlopen(request, timeout=GROQ_TIMEOUT) as response:
+        with urllib.request.urlopen(request, timeout=request_timeout if request_timeout is not None else GROQ_TIMEOUT) as response:
             payload = json.loads(response.read(MAX_RESPONSE_BYTES).decode("utf-8"))
     except urllib.error.HTTPError as exc:
         # Never forward provider response bodies: they can contain request data.

@@ -20,6 +20,7 @@ from ..config import (
 from ..domain.rules import AI_ALLOWED_DEPARTMENTS
 from ..domain.text import clean_text, now_iso, unique_items
 from ..infrastructure.json_store import load_json_file
+from .event_evidence import EVENT_REVIEW_VERSION
 
 
 _ai_lock = threading.Lock()
@@ -126,6 +127,7 @@ def ai_event_cache_key(
 
         "provider": AI_PROVIDER,
         "thinking": OLLAMA_THINK if AI_PROVIDER == "ollama" else GROQ_REASONING_EFFORT,
+        "event_review": EVENT_REVIEW_VERSION,
 
         "prompt_version":
             AI_PROMPT_VERSION,
@@ -385,7 +387,7 @@ def sanitize_ai_analysis(
 
         if department not in allowed:
 
-            department = responsible
+            continue
 
 
         processes.append(

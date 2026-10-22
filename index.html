@@ -1119,7 +1119,7 @@ button {
         <nav class="nav d-header-nav" aria-label="主導覽">
             <button class="active" data-view="intel" type="button" aria-current="page">監理資訊</button>
             <button data-view="management" type="button">管理摘要</button>
-            <button data-view="qa" type="button">AI 監理問答</button>
+            <button data-view="qa" type="button">監理問答助手</button>
         </nav>
         <div class="d-header-actions">
             <span class="d-connect">主管機關公開資料</span>
@@ -1161,7 +1161,7 @@ button {
 
                     <section class="d-ledger" aria-label="監理公告與法規清單">
                         <div class="d-ledger-title">
-                            <h3>最新公告與法規</h3>
+                            <h3>監理資訊清單</h3>
                             <small id="ledgerResultCount"></small>
                         </div>
                         <div class="d-search">
@@ -1178,7 +1178,7 @@ button {
                                     <div class="advanced-filter-body">
                                         <div class="advanced-filter-header">
                                             <strong>篩選監理資訊</strong>
-                                            <small>可複選條件</small>
+                                            <small>可複選，變更後立即套用</small>
                                         </div>
                                         <div class="advanced-filter-section">
                                             <div class="advanced-filter-label">
@@ -1189,7 +1189,7 @@ button {
                                         </div>
                                         <div class="advanced-filter-section">
                                             <div class="advanced-filter-label">
-                                                <strong>主要責任部門</strong>
+                                                <strong>建議關注部門</strong>
                                                 <small>同類條件擇一符合</small>
                                             </div>
                                             <div class="advanced-filter-options" id="departmentFilterOptions"></div>
@@ -1212,16 +1212,17 @@ button {
                                     <div class="advanced-filter-actions">
                                         <span id="advancedFilterDraftSummary">尚未選擇條件</span>
                                         <div>
-                                            <button type="button" class="secondary-button" id="clearAdvancedFilters">清除</button>
-                                            <button type="button" class="primary-button" id="applyAdvancedFilters">套用篩選</button>
+                                            <button type="button" class="secondary-button" id="clearAdvancedFilters">清除所有篩選</button>
+                                            <button type="button" class="primary-button" id="applyAdvancedFilters">完成</button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        <div id="intelActiveFilters" class="d-active-filters" aria-label="目前套用的篩選條件" hidden></div>
                         <div class="d-table-head"><span>發布日期</span><span>類型</span><span>公告與法規</span></div>
                         <div class="d-table-body event-list" id="eventList"></div>
-                        <nav class="list-pagination" id="eventPagination" aria-label="最新公告與法規分頁"></nav>
+                        <nav class="list-pagination" id="eventPagination" aria-label="監理資訊清單分頁"></nav>
                     </section>
 
                     <section class="d-dossier detail" id="eventDetail" aria-label="選取事件的監理分析" tabindex="-1">
@@ -1239,14 +1240,20 @@ button {
         <section id="qaView" class="hidden" aria-labelledby="qaTitle">
             <div class="d-heading">
                 <div>
-                    <h2 id="qaTitle">AI 監理問答</h2>
-                    <p>提出問題，依平台已收錄的官方資料整理回答與原文依據。</p>
+                    <h2 id="qaTitle">監理問答助手</h2>
+                    <p>輸入問題或工作情境，查詢相關法規及原文。需要其他資訊時，會再請你補充。</p>
                 </div>
             </div>
             <div class="qa-workspace">
+                <div id="qaExamples" class="qa-examples" aria-label="提問範例">
+                    <span>你可以這樣問</span>
+                    <button type="button" data-example="保險經紀人管理規則規範哪些事項？">保險經紀人管理規則規範什麼？</button>
+                    <button type="button" data-example="我想把既有保戶的姓名與電話交給台灣的委外客服廠商，提醒續期繳費，資料不傳境外，應先查哪些相關法規？">客戶資料提供給委外廠商</button>
+                </div>
                 <form id="qaForm" class="qa-form">
-                    <label for="qaQuestion">監理問題</label>
-                    <textarea id="qaQuestion" rows="3" minlength="2" maxlength="500" required placeholder="例如：保險業投資創投事業的預告修正重點是什麼？" aria-describedby="qaScopeNote"></textarea>
+                    <div class="qa-input-heading"><label id="qaInputLabel" for="qaQuestion">問題或工作情境</label><button id="qaNewQuestion" type="button" class="qa-reset">開始新問題</button></div>
+                    <div id="qaConversation" class="qa-conversation" aria-label="本次問答" hidden></div>
+                    <textarea id="qaQuestion" rows="3" minlength="2" maxlength="500" required placeholder="例如：把保戶名單交給委外客服提醒繳費，需要注意哪些規定？" aria-describedby="qaScopeNote"></textarea>
                     <details class="qa-filters">
                         <summary>搜尋範圍</summary>
                         <div class="qa-filter-fields">
@@ -1257,13 +1264,13 @@ button {
                         <p>日期依官方發布或修正／公布日篩選，不代表法規生效期間。</p>
                     </details>
                     <div class="qa-submit-row">
-                        <p id="qaScopeNote">每次獨立回答，範圍限平台已收錄的官方資料。</p>
+                        <p id="qaScopeNote">依已收錄的官方資料回答。同一問題可繼續補充，最多六次；請勿輸入客戶個資。</p>
                         <button type="submit" id="qaSubmit">送出問題</button>
                     </div>
                     <p id="qaStatus" class="qa-status" role="status" aria-live="polite"></p>
                 </form>
                 <section id="qaResult" class="qa-result" aria-label="監理問答結果" aria-busy="false" tabindex="-1">
-                    <div class="qa-empty"><strong>尚未提問</strong><p>回答會附原文依據，AI 推論另行標示。</p></div>
+                    <div class="qa-empty"><strong>查詢法規</strong><p>輸入問題或說明工作內容，回答會附上原文來源。</p></div>
                 </section>
             </div>
         </section>
@@ -1316,6 +1323,7 @@ button {
 
                 <section class="card management-result-panel" aria-labelledby="managementResultTitle">
                     <h2 id="managementResultTitle">摘要結果</h2>
+                    <div id="managementReportStatus" class="management-report-status" role="status" aria-live="polite" hidden></div>
                     <div id="reportBox" class="report-box" tabindex="-1" aria-busy="false">
                         <div class="management-report-empty">
                             <strong>尚未產生摘要</strong>
@@ -1400,7 +1408,7 @@ button {
     const labels = {
         intel: '監理情報',
         management: '監理趨勢',
-        qa: 'AI 監理問答'
+        qa: '監理問答助手'
     };
 
     document.querySelectorAll('[data-view]').forEach((button) => {

@@ -13,6 +13,7 @@ from unittest.mock import patch
 from regintel.application import regulatory_qa as qa
 from regintel.domain.knowledge_search import KnowledgeIndex, public_documents
 from regintel.web import Handler
+from tests.evidence_fixtures import supported_review_reply
 
 
 def record(key="investment", text="保險業辦理投資作業應建立內部控制制度，並保存投資決策與覆核紀錄。", **changes):
@@ -79,6 +80,8 @@ class RegulatoryQATests(unittest.TestCase):
 
     def test_answer_contains_only_real_passage_quotes_and_server_owned_urls(self):
         def model(**kwargs):
+            if "checks" in kwargs["schema"].get("properties", {}):
+                return supported_review_reply(kwargs)
             self.assertIn("不能視為已生效條文", kwargs["instructions"])
             self.assertIn("問題：投資內控", kwargs["input_text"])
             return {"facts": [

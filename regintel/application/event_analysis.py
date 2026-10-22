@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import json
 import time
 from typing import Any
 
@@ -16,17 +17,21 @@ from ..domain.schemas import AI_ANALYSIS_SCHEMA
 from ..domain.law_changes import latest_amendment_record
 from ..domain.law_comparison import comparison_evidence, verified_change_summary
 from ..domain.text import clean_text, date_sort_key
+from ..domain.interpretation import DEPARTMENT_GUIDANCE, is_draft_event, department_hints
 from ..infrastructure.json_store import atomic_write_json, load_json_file
 from ..infrastructure.attachment_text import fetch_event_attachment_text
 from ..infrastructure.announcement_content import fetch_announcement_content
 from ..infrastructure.ai import call_structured_json
 from .ai_support import (
     ai_event_cache_key,
+    has_substantive_ai_analysis,
     load_ai_cache,
     sanitize_ai_analysis,
     serialize_ai_cache,
 )
 from .law_comparison import get_law_comparisons
+from .event_evidence import EVENT_REVIEW_INPUT_CHARS, LAW_COMPARISON_INPUT_CHARS, reusable_event_review, review_event_analysis
+from .impact_assessment import refine_impacts
 
 
 def has_analyzable_source_text(description: str) -> bool:
@@ -201,7 +206,9 @@ def analyze_event_with_ai(
 
     original_description = description
     comparisons = get_law_comparisons(analysis_event)
-    change_evidence = comparison_evidence(comparisons, max_chars=max(0, AI_MAX_INPUT_CHARS - 1000))
+    has_comparison = any(item.get("status") == "ready" and item.get("changes") for item in comparisons)
+    input_limit = min(AI_MAX_INPUT_CHARS, LAW_COMPARISON_INPUT_CHARS if has_comparison else EVENT_REVIEW_INPUT_CHARS)
+    change_evidence = comparison_evidence(comparisons, max_chars=max(0, input_limit - 1000))
     if change_evidence:
         description = change_evidence
         content_source = "官方條文前後對照"
@@ -244,7 +251,7 @@ def analyze_event_with_ai(
             dict
         ) and cached.get(
             "analysis_mode"
-        ) == "AI 深度分析":
+        ) == "AI 深度分析" and reusable_event_review(cached):
             if change_evidence:
                 verified_summary, verified_points = verified_change_summary(comparisons)
                 cached = dict(cached, summary=verified_summary, regulatory_points=verified_points,
@@ -252,16 +259,17 @@ def analyze_event_with_ai(
             return cached
 
 
+        source_is_excerpt = len(description) > input_limit or bool(change_evidence)
         if (
             len(description)
             >
-            AI_MAX_INPUT_CHARS
+            input_limit
         ):
 
             description = (
 
                 description[
-                    :AI_MAX_INPUT_CHARS
+                    :input_limit
                 ]
 
                 +
@@ -336,6 +344,9 @@ def analyze_event_with_ai(
             "受影響部門只能從以下企業職能選擇："
 
             f"{departments_text}。"
+            + DEPARTMENT_GUIDANCE +
+            "先辨識法規直接規範的對象：經紀人公司及銀行的要求，對保險公司只可說明合作通路可能的間接影響。"
+            "新增與刪除條文若文字高度相似，應說明可能移列；既有資格或義務不能稱全新要求。"
 
             "impact_processes 請辨識可能"
             "受影響的企業作業流程，"
@@ -347,7 +358,20 @@ def analyze_event_with_ai(
 
             "全部輸出繁體中文，內容要簡潔、"
             "專業、可供企業初步研判。"
+            "rating_reason 請依本次原文簡述風險與重要性的判斷依據，不能只重複分級標籤。"
+            "各項列表最多三項，每項盡量在80字內；沒有依據就留空，不補通用建議。"
+            "部門可列至五項以涵蓋實際作業職能；每項說明原文所述工作與職能的關聯。"
+            "部門與流程影響請使用可能或建議用語，不得把公司內部職責當成官方指定。"
+            "因應建議使用『若公司有相同作業，可先檢查……』，可以從具體缺失提出檢查方向，"
+            "不必等待原文逐字寫出建議，但不得虛構表單、期限、核准人或法定義務。"
         )
+
+        if is_draft_event(analysis_event, description):
+            instructions += (
+                "本則發布時為草案／預告，尚未核實後續正式發布。所有部門理由、流程影響與建議均須保留草案準備性質與條件；"
+                "以『若公司有相關投資或業務，可先盤點並評估草案影響、追蹤正式發布』表述。"
+                "不能直接寫應調整、確保符合修正後條文、制定指引或要求回饋意見。"
+            )
 
 
         input_text = (
@@ -382,6 +406,22 @@ def analyze_event_with_ai(
             "改善建議與因應措施，"
             "以及一段主管摘要。"
         )
+        hints = department_hints(description)
+        if hints:
+            input_text += ("\n\n以下是由原文作業詞彙找出的職能候選及原文片段，僅供你推估，不是指定權責，亦不必全部採用：\n"
+                           + json.dumps(hints, ensure_ascii=False))
+        input_text += (
+            "\n本輪輸出重點：部門名稱必須逐字使用指定分類；流程的部門須為相關作業職能，法務與內稽只處理法律審查或獨立查核。"
+            "因應措施每項以『若公司有相關作業，可先……』起頭，不寫立即執行或已確認公司存在缺失。"
+            "rating_reason不超過60字，只說明具體缺失、影響範圍及急迫性，不列長串法條或重述所有金額。"
+        )
+        if is_draft_event(analysis_event, description):
+            input_text += (
+                "本則只做原文所述業務的草案準備評估；從原文的具體作業推估，"
+                "不得自行衍生原文未涉及的商品設計、模型或計量變更。"
+                "actions以『若公司有相關業務，可先盤點並評估草案影響，追蹤正式發布』為格式，"
+                "不得寫確保符合修正後條文、必須調整流程或已有裁罰風險。"
+            )
 
 
         result = (
@@ -395,17 +435,29 @@ def analyze_event_with_ai(
 
                 schema=
                     AI_ANALYSIS_SCHEMA,
-                context_window=16384 if announcement or change_evidence else None,
+                context_window=16384,
+                max_output_tokens=2200,
+                request_timeout=180 if len(description) > 6000 else 90,
             )
         )
 
 
+        # A substantive AI result must not inherit unchecked rule suggestions.
+        ai_fallback = dict(fallback)
+        if has_substantive_ai_analysis(result):
+            ai_fallback.update(summary="", management_summary="", event_nature="待確認",
+                               risk_level="待確認", importance="待確認", responsible_department="待確認",
+                               regulatory_points=[], departments=[], impact_processes=[], attention_items=[], actions=[])
         analysis = (
             sanitize_ai_analysis(
                 result,
-                fallback
+                ai_fallback
             )
         )
+        analysis["rating_reason"] = clean_text(result.get("rating_reason", ""))
+        if analysis.get("analysis_mode") == "AI 深度分析" and result.get("responsible_department") not in AI_ALLOWED_DEPARTMENTS:
+            analysis["responsible_department"] = "待確認"
+        program_facts = ""
 
         if announcement and has_analyzable_source_text(description):
             analysis["source_title"] = analysis_event["title"]
@@ -414,6 +466,7 @@ def analyze_event_with_ai(
             analysis["content_source"] = content_source
 
         if change_evidence:
+            program_facts = "條文差異摘要與監理重點由程式比對官方版本產生，可能跨越多次修正；附件與未列條文未納入 AI 分析"
             verified_summary, verified_points = verified_change_summary(comparisons)
             analysis["summary"] = verified_summary
             analysis["regulatory_points"] = verified_points
@@ -429,9 +482,19 @@ def analyze_event_with_ai(
         ):
             analysis = ground_law_amendment_analysis(
                 analysis,
-                fallback,
+                ai_fallback,
                 analysis_event,
                 description,
+            )
+            program_facts = "沿革摘要與修正條次由程式整理官方沿革，尚未取得前後條文，不推定具體新增義務"
+            analysis["rating_reason"] = "官方已發布法規修正且列出修正條次，依平台初步篩選規則列中風險、重要；具體義務仍須比對條文。"
+
+        if analysis.get("analysis_mode") == "AI 深度分析":
+            analysis = refine_impacts(analysis, analysis_event, description, model=call_structured_json,
+                                      has_comparison=bool(change_evidence))
+            analysis = review_event_analysis(
+                analysis, analysis_event, description, model=call_structured_json,
+                program_facts=program_facts, source_is_excerpt=source_is_excerpt,
             )
 
         model_timing = result.get("_model_timing", result.get("_ollama_timing"))
@@ -439,12 +502,13 @@ def analyze_event_with_ai(
             analysis["generation_timing"] = {
                 **model_timing,
                 "source_seconds": round(source_seconds, 3),
+                "review_seconds": analysis.get("support_review", {}).get("seconds", 0),
                 "total_seconds": round(time.perf_counter() - started, 3),
             }
 
         if analysis.get(
             "analysis_mode"
-        ) == "AI 深度分析":
+        ) == "AI 深度分析" and reusable_event_review(analysis):
 
             cache[
                 "analyses"
@@ -457,7 +521,7 @@ def analyze_event_with_ai(
 
             if analysis.get(
                 "analysis_mode"
-            ) == "AI 深度分析":
+            ) == "AI 深度分析" and reusable_event_review(analysis):
 
                 atomic_write_json(
                     AI_CACHE_FILE,

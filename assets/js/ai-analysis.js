@@ -62,6 +62,7 @@ async function ensureAIAnalysis(
         ?.analysis_mode
         ===
         'AI 深度分析'
+        && event.analysis?.support_review?.version
     ){
 
         return;
@@ -177,7 +178,8 @@ async function ensureAIAnalysis(
 
         const keepPreviousAnalysis = force
             && event.analysis?.analysis_mode === 'AI 深度分析'
-            && data.analysis?.analysis_mode !== 'AI 深度分析';
+            && (data.analysis?.analysis_mode !== 'AI 深度分析'
+                || (event.analysis?.support_review?.unverified === 0 && data.analysis?.support_review?.unverified > 0));
 
 
         if(
@@ -217,6 +219,7 @@ async function ensureAIAnalysis(
             ?.analysis_mode
             ===
             'AI 深度分析'
+            && !(event.analysis?.support_review?.unverified > 0)
         ){
 
             analysisStatus =
@@ -262,6 +265,9 @@ async function ensureAIAnalysis(
             event,
             analysisStatus
         );
+
+        renderAdvancedFilters();
+        renderList();
 
         if(event.id === state.selected){
             renderDetail(false);

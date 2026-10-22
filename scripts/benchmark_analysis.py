@@ -30,6 +30,8 @@ def main() -> int:
     parser.add_argument("--max-seconds", type=float)
     parser.add_argument("--output", type=Path, default=ROOT / "tmp/performance/analysis-benchmark.json")
     args = parser.parse_args()
+    if config.AI_PROVIDER != "ollama":
+        parser.error("This benchmark requires AI_PROVIDER=ollama and does not use cloud providers.")
     endpoint = urllib.parse.urlsplit(config.OLLAMA_API_URL)
     if endpoint.hostname not in {"localhost", "127.0.0.1", "::1"} or endpoint.username or endpoint.password:
         parser.error("This benchmark only connects to a local Ollama server.")

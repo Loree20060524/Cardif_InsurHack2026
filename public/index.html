@@ -1,0 +1,1429 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RegIntel｜監理情報工作台</title>
+
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/workspace.css">
+<link rel="stylesheet" href="assets/css/intelligence.css">
+<link rel="stylesheet" href="assets/css/management.css">
+<link rel="stylesheet" href="assets/css/responsive.css">
+
+<!--
+    RegIntel v11.1 UI override
+    ------------------------------------------------------------
+    這一層樣式刻意放在原有 CSS 後面：
+    1. 不更動既有 JS 掛勾與資料邏輯
+    2. 直接覆蓋原本較偏 AI Dashboard 的視覺語言
+    3. 讓畫面更接近金融機構內部監理情報工作台
+-->
+<style>
+:root {
+    --ri-bg: #f4f6f8;
+    --ri-surface: #ffffff;
+    --ri-surface-soft: #f8fafb;
+    --ri-ink: #1b2733;
+    --ri-ink-2: #43515f;
+    --ri-ink-3: #72808e;
+    --ri-border: #dfe5ea;
+    --ri-border-strong: #cbd4dc;
+    --ri-navy: #17232e;
+    --ri-navy-2: #22313f;
+    --ri-blue: #245d82;
+    --ri-blue-soft: #edf4f8;
+    --ri-red: #9f3a38;
+    --ri-red-soft: #fbf0ef;
+    --ri-amber: #8b6414;
+    --ri-amber-soft: #fbf6e8;
+    --ri-green: #376b52;
+    --ri-green-soft: #eef6f1;
+    --ri-radius: 8px;
+    --ri-sidebar-width: 236px;
+    --ri-sidebar-collapsed-width: 64px;
+    --ri-shadow-float: 0 12px 28px rgba(20, 34, 46, .08);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    background: var(--ri-bg);
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    background: var(--ri-bg) !important;
+    color: var(--ri-ink) !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif !important;
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.shell {
+    display: flex !important;
+    min-height: 100vh;
+    width: 100%;
+    background: var(--ri-bg) !important;
+}
+
+/* Sidebar ------------------------------------------------------- */
+.sidebar {
+    position: sticky !important;
+    top: 0;
+    flex: 0 0 var(--ri-sidebar-width);
+    width: var(--ri-sidebar-width) !important;
+    min-width: var(--ri-sidebar-width) !important;
+    height: 100vh;
+    display: flex !important;
+    flex-direction: column;
+    padding: 0 !important;
+    overflow: hidden;
+    background: var(--ri-navy) !important;
+    color: #dbe2e8 !important;
+    border-right: 1px solid #0f1922 !important;
+    box-shadow: none !important;
+    transition: width .18s ease, min-width .18s ease, flex-basis .18s ease;
+    z-index: 30;
+}
+
+.sidebar.collapsed {
+    flex: 0 0 var(--ri-sidebar-collapsed-width) !important;
+    flex-basis: var(--ri-sidebar-collapsed-width) !important;
+    width: var(--ri-sidebar-collapsed-width) !important;
+    min-width: var(--ri-sidebar-collapsed-width) !important;
+}
+
+.sidebar-head {
+    min-height: 78px;
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px !important;
+    border-bottom: 1px solid rgba(255,255,255,.09);
+}
+
+.sidebar-toggle {
+    width: 34px !important;
+    height: 34px !important;
+    flex: 0 0 34px;
+    display: inline-grid !important;
+    place-items: center;
+    padding: 0 !important;
+    border: 1px solid rgba(255,255,255,.16) !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+    color: #dbe2e8 !important;
+    box-shadow: none !important;
+}
+
+.sidebar-toggle:hover {
+    background: rgba(255,255,255,.06) !important;
+    border-color: rgba(255,255,255,.28) !important;
+}
+
+.sidebar-toggle svg,
+.nav-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.brand {
+    min-width: 0;
+    color: #ffffff !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    letter-spacing: .01em;
+    line-height: 1.15;
+}
+
+.brand small {
+    display: block !important;
+    margin-top: 5px;
+    color: #93a2af !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    letter-spacing: .04em;
+}
+
+.nav {
+    display: grid !important;
+    gap: 4px;
+    padding: 18px 12px !important;
+}
+
+.nav button {
+    position: relative;
+    width: 100%;
+    min-height: 44px;
+    display: flex !important;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px !important;
+    border: 0 !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+    color: #b8c3cc !important;
+    text-align: left;
+    box-shadow: none !important;
+    transition: background .14s ease, color .14s ease;
+}
+
+.nav button:hover {
+    background: rgba(255,255,255,.055) !important;
+    color: #ffffff !important;
+}
+
+.nav button.active {
+    background: #22313f !important;
+    color: #ffffff !important;
+    box-shadow: inset 3px 0 0 #7ea7c0 !important;
+}
+
+.nav-icon {
+    width: 22px;
+    min-width: 22px;
+    display: inline-grid;
+    place-items: center;
+    color: inherit;
+}
+
+.nav-label {
+    min-width: 0;
+    font-weight: 600;
+}
+
+.nav-label-short {
+    display: none;
+}
+
+.side-note {
+    margin: auto 16px 18px !important;
+    padding: 14px 14px 15px !important;
+    border: 1px solid rgba(255,255,255,.10) !important;
+    border-radius: 7px !important;
+    background: rgba(255,255,255,.025) !important;
+    color: #aebbc5 !important;
+    font-size: 11.5px !important;
+    line-height: 1.75 !important;
+    box-shadow: none !important;
+}
+
+.side-note strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #e4e9ed;
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.sidebar.collapsed .brand,
+.sidebar.collapsed .side-note,
+.sidebar.collapsed .nav-label {
+    display: none !important;
+}
+
+.sidebar.collapsed .sidebar-head {
+    justify-content: center;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+
+.sidebar.collapsed .nav {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+
+.sidebar.collapsed .nav button {
+    justify-content: center;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+}
+
+.sidebar.collapsed .nav button::after {
+    content: attr(data-tooltip);
+    position: fixed;
+    left: calc(var(--ri-sidebar-collapsed-width) + 8px);
+    padding: 6px 9px;
+    border: 1px solid var(--ri-border-strong);
+    border-radius: 5px;
+    background: #ffffff;
+    color: var(--ri-ink);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    box-shadow: 0 6px 18px rgba(15,25,34,.10);
+    transform: translateX(-3px);
+    transition: opacity .12s ease, transform .12s ease, visibility .12s ease;
+    z-index: 80;
+}
+
+.sidebar.collapsed .nav button:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+/* Main / topbar ------------------------------------------------- */
+.main {
+    min-width: 0;
+    flex: 1 1 auto;
+    background: var(--ri-bg) !important;
+}
+
+.topbar {
+    position: sticky !important;
+    top: 0;
+    z-index: 20;
+    min-height: 78px;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 13px 28px !important;
+    background: rgba(255,255,255,.97) !important;
+    border-bottom: 1px solid var(--ri-border) !important;
+    box-shadow: none !important;
+    backdrop-filter: blur(8px);
+}
+
+.topbar-heading {
+    min-width: 0;
+}
+
+.site-title {
+    margin: 0 !important;
+    color: var(--ri-ink) !important;
+    font-size: 20px !important;
+    font-weight: 720 !important;
+    line-height: 1.2;
+    letter-spacing: -.015em;
+}
+
+.site-subtitle {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    margin-top: 5px;
+    color: var(--ri-ink-3) !important;
+    font-size: 12px !important;
+}
+
+.site-subtitle strong {
+    color: var(--ri-ink-2) !important;
+    font-weight: 650 !important;
+}
+
+.site-subtitle-divider {
+    color: #aab4bc;
+}
+
+.top-actions {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn,
+.primary-button,
+.secondary-button,
+.advanced-filter-button {
+    min-height: 38px;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    transition: background .14s ease, border-color .14s ease, color .14s ease;
+}
+
+.btn {
+    padding: 8px 13px !important;
+    border: 1px solid var(--ri-border-strong) !important;
+    background: #ffffff !important;
+    color: var(--ri-ink-2) !important;
+    font-weight: 600 !important;
+}
+
+.btn:hover {
+    border-color: #9fadb8 !important;
+    background: var(--ri-surface-soft) !important;
+}
+
+.btn.primary,
+.primary-button {
+    border: 1px solid var(--ri-navy-2) !important;
+    background: var(--ri-navy-2) !important;
+    color: #ffffff !important;
+}
+
+.btn.primary:hover,
+.primary-button:hover {
+    background: #17232e !important;
+    border-color: #17232e !important;
+}
+
+.secondary-button {
+    border: 1px solid var(--ri-border-strong) !important;
+    background: #ffffff !important;
+    color: var(--ri-ink-2) !important;
+}
+
+.content {
+    width: 100%;
+    max-width: 1680px;
+    margin: 0 auto;
+    padding: 26px 28px 36px !important;
+}
+
+/* View heading -------------------------------------------------- */
+.view-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 18px;
+}
+
+.view-heading-copy {
+    min-width: 0;
+}
+
+.view-kicker {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--ri-blue);
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: .08em;
+}
+
+.view-heading h2 {
+    margin: 0;
+    color: var(--ri-ink);
+    font-size: 24px;
+    font-weight: 730;
+    line-height: 1.25;
+    letter-spacing: -.025em;
+}
+
+.view-heading p {
+    max-width: 760px;
+    margin: 7px 0 0;
+    color: var(--ri-ink-3);
+    font-size: 13px;
+}
+
+.view-scope {
+    display: none !important;
+}
+
+/* Notice -------------------------------------------------------- */
+.notice {
+    margin-bottom: 16px !important;
+    padding: 10px 12px !important;
+    border: 1px solid #d9caa6 !important;
+    border-radius: 6px !important;
+    background: #fffaf0 !important;
+    color: #6f5b2a !important;
+    box-shadow: none !important;
+}
+
+/* Search/filter ------------------------------------------------- */
+.toolbar {
+    position: relative;
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px !important;
+    padding: 10px !important;
+    border: 1px solid var(--ri-border) !important;
+    border-radius: var(--ri-radius) !important;
+    background: var(--ri-surface) !important;
+    box-shadow: none !important;
+}
+
+.search {
+    min-width: 0;
+    flex: 1 1 auto;
+    height: 40px !important;
+    padding: 0 13px !important;
+    border: 1px solid var(--ri-border-strong) !important;
+    border-radius: 6px !important;
+    outline: none !important;
+    background: #ffffff !important;
+    color: var(--ri-ink) !important;
+    box-shadow: none !important;
+}
+
+.search::placeholder {
+    color: #94a0aa;
+}
+
+.search:focus {
+    border-color: #6f91a8 !important;
+    box-shadow: 0 0 0 3px rgba(36,93,130,.08) !important;
+}
+
+.advanced-filter {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.advanced-filter-button {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 7px;
+    height: 40px;
+    padding: 0 12px !important;
+    border: 1px solid var(--ri-border-strong) !important;
+    background: var(--ri-surface-soft) !important;
+    color: var(--ri-ink-2) !important;
+    font-weight: 600 !important;
+}
+
+.advanced-filter-button:hover {
+    background: #eef2f5 !important;
+    border-color: #a9b6bf !important;
+}
+
+.advanced-filter-count {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 99px;
+    background: var(--ri-blue) !important;
+    color: #ffffff !important;
+    font-size: 10px;
+}
+
+.advanced-filter-panel {
+    position: absolute !important;
+    top: calc(100% + 8px);
+    right: 0;
+    width: min(520px, calc(100vw - 64px));
+    padding: 16px !important;
+    border: 1px solid var(--ri-border-strong) !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    box-shadow: var(--ri-shadow-float) !important;
+    z-index: 50;
+}
+
+.advanced-filter-header,
+.advanced-filter-label,
+.advanced-filter-actions {
+    color: var(--ri-ink) !important;
+}
+
+.advanced-filter-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 11px;
+    border-bottom: 1px solid var(--ri-border);
+}
+
+.advanced-filter-header strong,
+.advanced-filter-label strong {
+    font-weight: 680 !important;
+}
+
+.advanced-filter-header small,
+.advanced-filter-label small,
+#advancedFilterDraftSummary {
+    color: var(--ri-ink-3) !important;
+    font-size: 11px;
+}
+
+.advanced-filter-section {
+    padding: 14px 0 !important;
+    border-bottom: 1px solid #edf0f2;
+}
+
+.advanced-filter-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 9px;
+}
+
+.advanced-filter-options {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.advanced-filter-options label,
+.advanced-filter-options button,
+.advanced-filter-options .filter-option {
+    border-radius: 4px !important;
+}
+
+.advanced-filter-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding-top: 14px;
+}
+
+.advanced-filter-actions > div {
+    display: flex;
+    gap: 7px;
+}
+
+/* The old moving ticker is deliberately retained for JS safety,
+   but hidden in the new information-workbench visual direction. */
+.news-ticker {
+    display: none !important;
+}
+
+/* Main workspace ------------------------------------------------ */
+.workspace {
+    display: grid !important;
+    grid-template-columns: minmax(330px, .78fr) minmax(540px, 1.42fr);
+    align-items: start;
+    gap: 14px !important;
+}
+
+.panel {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--ri-border) !important;
+    border-radius: var(--ri-radius) !important;
+    background: var(--ri-surface) !important;
+    box-shadow: none !important;
+}
+
+.panel-head {
+    min-height: 52px;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 13px 16px !important;
+    border-bottom: 1px solid var(--ri-border) !important;
+    background: #fbfcfd !important;
+}
+
+.panel-head b {
+    color: var(--ri-ink) !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+}
+
+.panel-head small {
+    color: var(--ri-ink-3) !important;
+    font-size: 11px !important;
+}
+
+.event-list {
+    max-height: calc(100vh - 258px);
+    overflow: auto !important;
+    background: #ffffff !important;
+    scrollbar-width: thin;
+    scrollbar-color: #c8d0d7 transparent;
+}
+
+.event-list > * {
+    margin: 0 !important;
+    padding: 14px 16px !important;
+    border: 0 !important;
+    border-bottom: 1px solid #edf0f2 !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    transition: background .12s ease, box-shadow .12s ease;
+}
+
+.event-list > *:last-child {
+    border-bottom: 0 !important;
+}
+
+.event-list > *:hover {
+    background: #f8fafb !important;
+}
+
+.event-list > *.active,
+.event-list > *.selected,
+.event-list > *[aria-selected="true"] {
+    background: #f1f6f9 !important;
+    box-shadow: inset 3px 0 0 var(--ri-blue) !important;
+}
+
+.event-list h3,
+.event-list h4,
+.event-list .title,
+.event-list .event-title {
+    margin-top: 0 !important;
+    color: var(--ri-ink) !important;
+    font-weight: 660 !important;
+    line-height: 1.45 !important;
+}
+
+.event-list small,
+.event-list .meta,
+.event-list .event-meta,
+.event-list .date,
+.event-list time {
+    color: var(--ri-ink-3) !important;
+}
+
+.detail {
+    min-height: calc(100vh - 208px);
+    padding: 24px 26px !important;
+    background: #ffffff !important;
+    color: var(--ri-ink) !important;
+}
+
+.detail > :first-child {
+    margin-top: 0 !important;
+}
+
+.detail h1,
+.detail h2,
+.detail h3,
+.detail h4 {
+    color: var(--ri-ink) !important;
+}
+
+.detail h1 {
+    font-size: 23px !important;
+    line-height: 1.42 !important;
+    letter-spacing: -.02em;
+}
+
+.detail h2 {
+    margin-top: 28px !important;
+    padding-top: 18px;
+    border-top: 1px solid #edf0f2;
+    font-size: 15px !important;
+    font-weight: 710 !important;
+}
+
+.detail h3 {
+    font-size: 14px !important;
+    font-weight: 680 !important;
+}
+
+.detail p,
+.detail li {
+    color: var(--ri-ink-2) !important;
+}
+
+.detail a {
+    color: var(--ri-blue) !important;
+    text-underline-offset: 3px;
+}
+
+.detail .empty,
+.empty {
+    min-height: 240px;
+    display: grid !important;
+    place-items: center;
+    color: var(--ri-ink-3) !important;
+    background: transparent !important;
+}
+
+/* Generic chips / status generated by existing JS -------------- */
+.badge,
+.tag,
+.pill,
+.chip,
+.status,
+.detail [class*="badge"],
+.event-list [class*="badge"] {
+    border: 1px solid var(--ri-border) !important;
+    border-radius: 4px !important;
+    background: #f6f8f9 !important;
+    color: var(--ri-ink-2) !important;
+    box-shadow: none !important;
+    font-weight: 650 !important;
+}
+
+[class*="risk-high"],
+[class*="danger"],
+[class*="high-risk"] {
+    border-color: #e6c5c3 !important;
+    background: var(--ri-red-soft) !important;
+    color: var(--ri-red) !important;
+}
+
+[class*="risk-medium"],
+[class*="warning"],
+[class*="medium-risk"] {
+    border-color: #e7d8aa !important;
+    background: var(--ri-amber-soft) !important;
+    color: var(--ri-amber) !important;
+}
+
+[class*="risk-low"],
+[class*="success"],
+[class*="low-risk"] {
+    border-color: #cfe0d6 !important;
+    background: var(--ri-green-soft) !important;
+    color: var(--ri-green) !important;
+}
+
+/* Generated section/card cleanup ------------------------------- */
+.detail .card,
+.detail [class*="summary-card"],
+.detail [class*="impact-card"],
+.detail [class*="analysis-card"],
+.detail [class*="chain-"] {
+    border-color: var(--ri-border) !important;
+    border-radius: 7px !important;
+    box-shadow: none !important;
+}
+
+/* Management / trend view -------------------------------------- */
+#managementView {
+    min-width: 0;
+}
+
+.management-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.08fr) minmax(320px, .92fr);
+    gap: 14px !important;
+}
+
+.card {
+    min-width: 0;
+    padding: 20px !important;
+    border: 1px solid var(--ri-border) !important;
+    border-radius: var(--ri-radius) !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+}
+
+.card h2 {
+    margin: 0 0 15px !important;
+    color: var(--ri-ink) !important;
+    font-size: 15px !important;
+    font-weight: 710 !important;
+}
+
+#priorityList > *,
+#trendList > * {
+    border-color: #e8ecef !important;
+    box-shadow: none !important;
+}
+
+/* Sources modal ------------------------------------------------- */
+.modal-bg {
+    position: fixed !important;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(15,25,34,.48) !important;
+    z-index: 100;
+}
+
+.modal {
+    width: min(860px, 100%);
+    max-height: min(760px, calc(100vh - 48px));
+    overflow: auto;
+    padding: 0 !important;
+    border: 1px solid var(--ri-border-strong) !important;
+    border-radius: 9px !important;
+    background: #ffffff !important;
+    box-shadow: 0 20px 48px rgba(15,25,34,.18) !important;
+}
+
+.modal-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px !important;
+    border-bottom: 1px solid var(--ri-border) !important;
+    background: #ffffff !important;
+}
+
+.modal-head h2 {
+    margin: 0;
+    color: var(--ri-ink) !important;
+    font-size: 16px !important;
+}
+
+#sourceStatusList {
+    padding: 16px 18px 20px;
+}
+
+.toast {
+    position: fixed !important;
+    right: 22px;
+    bottom: 22px;
+    z-index: 120;
+    max-width: min(420px, calc(100vw - 44px));
+    padding: 11px 14px !important;
+    border: 1px solid #2d3c48 !important;
+    border-radius: 6px !important;
+    background: #1c2934 !important;
+    color: #ffffff !important;
+    box-shadow: 0 10px 28px rgba(10,20,28,.18) !important;
+}
+
+/* Responsive ---------------------------------------------------- */
+@media (max-width: 1180px) {
+    .workspace {
+        grid-template-columns: minmax(300px, .86fr) minmax(470px, 1.14fr);
+    }
+
+    .content {
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+    }
+
+    .topbar {
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+    }
+}
+
+@media (max-width: 980px) {
+    .workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .event-list {
+        max-height: 420px;
+    }
+
+    .detail {
+        min-height: 420px;
+    }
+
+    .management-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 720px) {
+    :root {
+        --ri-sidebar-width: 196px;
+        --ri-sidebar-collapsed-width: 58px;
+    }
+
+    .sidebar {
+        position: sticky !important;
+        left: auto;
+        top: 0;
+        transform: none !important;
+    }
+
+    .sidebar-head {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    .sidebar.collapsed .sidebar-head {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .topbar {
+        position: static !important;
+        min-height: auto;
+        align-items: flex-start;
+        padding: 14px 14px !important;
+    }
+
+    .site-subtitle > span:first-child,
+    .site-subtitle-divider {
+        display: none;
+    }
+
+    .top-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .btn {
+        min-height: 36px;
+        padding: 7px 10px !important;
+        font-size: 12px !important;
+    }
+
+    .content {
+        padding: 18px 14px 28px !important;
+    }
+
+    .view-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .view-heading h2 {
+        font-size: 21px;
+    }
+
+    .view-scope {
+        justify-content: flex-start;
+    }
+
+    .toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .advanced-filter,
+    .advanced-filter-button {
+        width: 100%;
+    }
+
+    .advanced-filter-button {
+        justify-content: center;
+    }
+
+    .advanced-filter-panel {
+        position: fixed !important;
+        left: 14px;
+        right: 14px;
+        top: 88px;
+        width: auto;
+        max-height: calc(100vh - 112px);
+        overflow: auto;
+    }
+
+    .advanced-filter-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .advanced-filter-actions > div {
+        width: 100%;
+    }
+
+    .advanced-filter-actions button {
+        flex: 1 1 0;
+    }
+
+    .panel-head,
+    .event-list > * {
+        padding-left: 13px !important;
+        padding-right: 13px !important;
+    }
+
+    .detail {
+        padding: 19px 16px !important;
+    }
+}
+</style>
+<link rel="stylesheet" href="assets/css/ledger.css">
+<link rel="stylesheet" href="assets/css/pagination.css">
+<link rel="stylesheet" href="assets/css/regulatory-qa.css">
+
+</head>
+
+<body class="ledger-app">
+<div class="shell">
+
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+        <button
+            class="sidebar-toggle"
+            id="sidebarToggle"
+            type="button"
+            aria-label="收合主選單"
+            aria-expanded="true"
+            aria-controls="primaryNavigation"
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+
+        <div class="brand">
+            RegIntel
+            <small>監理情報工作台</small>
+        </div>
+    </div>
+
+    <nav class="nav" id="primaryNavigation" aria-label="主選單">
+        <button class="active" data-view="intel" data-tooltip="監理情報" aria-label="監理情報" type="button">
+            <span class="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="M4 19V5" />
+                    <path d="M4 7h16" />
+                    <path d="M8 11h8" />
+                    <path d="M8 15h6" />
+                    <path d="M8 19h4" />
+                </svg>
+            </span>
+            <span class="nav-label">
+                <span class="nav-label-full">監理情報</span>
+                <span class="nav-label-short">情報</span>
+            </span>
+        </button>
+
+        <button data-view="management" data-tooltip="監理趨勢" aria-label="監理趨勢" type="button">
+            <span class="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="M4 20V10" />
+                    <path d="M10 20V4" />
+                    <path d="M16 20v-7" />
+                    <path d="M22 20H2" />
+                </svg>
+            </span>
+            <span class="nav-label">
+                <span class="nav-label-full">監理趨勢</span>
+                <span class="nav-label-short">趨勢</span>
+            </span>
+        </button>
+    </nav>
+
+    <div class="side-note">
+        <strong>保險業監理情報與風險預警</strong>
+        整合官方監理訊號，辨識可能影響的部門與作業流程，協助及早掌握風險與監理趨勢。
+    </div>
+</aside>
+
+<main class="main">
+    <header class="d-header">
+        <div class="d-brand"><strong>RegIntel</strong><span>保險監理資訊</span></div>
+        <nav class="nav d-header-nav" aria-label="主導覽">
+            <button class="active" data-view="intel" type="button" aria-current="page">監理資訊</button>
+            <button data-view="management" type="button">管理摘要</button>
+            <button data-view="qa" type="button">監理問答助手</button>
+        </nav>
+        <div class="d-header-actions">
+            <span class="d-connect">主管機關公開資料</span>
+            <button type="button" id="sourcesBtn">來源狀態</button>
+            <button type="button" class="d-refresh" id="refreshBtn">更新最新資訊</button>
+        </div>
+    </header>
+    <header class="topbar">
+        <div class="topbar-heading">
+            <h1 class="site-title">RegIntel</h1>
+            <div class="site-subtitle">
+                <span>保險業監理情報與風險預警平台</span>
+                <span class="site-subtitle-divider" aria-hidden="true">·</span>
+                <strong id="viewTitle">監理情報</strong>
+            </div>
+        </div>
+
+    </header>
+
+    <div class="content">
+        <div id="connectionNotice" class="notice hidden"></div>
+
+        <section id="intelView">
+            <div class="d-view">
+                <div class="d-heading">
+                    <div>
+                        <h2>監理資訊</h2>
+                        <p>彙整主管機關公告與法規更新，選取項目查看重點及可能影響。</p>
+                    </div>
+                    <div class="d-statusline" id="ledgerStatus"></div>
+                </div>
+
+                <div class="d-workspace">
+                    <aside class="d-filters" aria-label="資訊類別篩選">
+                        <div class="d-side-title">資訊類別</div>
+                        <div class="d-source-list" id="sourceTypeList"></div>
+                        <p class="d-side-note">資料來源為主管機關公開資訊；分析內容供初步參考。</p>
+                    </aside>
+
+                    <section class="d-ledger" aria-label="監理公告與法規清單">
+                        <div class="d-ledger-title">
+                            <h3>監理資訊清單</h3>
+                            <small id="ledgerResultCount"></small>
+                        </div>
+                        <div class="d-search">
+                            <span aria-hidden="true">⌕</span>
+                            <input class="search" id="search" type="search" placeholder="搜尋公告、法規或關鍵字" aria-label="搜尋監理資訊">
+                            <div class="advanced-filter" id="advancedFilter">
+                                <button type="button" class="advanced-filter-button" id="advancedFilterButton" aria-expanded="false" aria-controls="advancedFilterPanel">
+                                    <span aria-hidden="true">⌕</span>
+                                    <span>篩選條件</span>
+                                    <span class="advanced-filter-count hidden" id="advancedFilterCount"></span>
+                                    <span class="advanced-filter-chevron" aria-hidden="true">⌄</span>
+                                </button>
+                                <div class="advanced-filter-panel hidden" id="advancedFilterPanel">
+                                    <div class="advanced-filter-body">
+                                        <div class="advanced-filter-header">
+                                            <strong>篩選監理資訊</strong>
+                                            <small>可複選，變更後立即套用</small>
+                                        </div>
+                                        <div class="advanced-filter-section">
+                                            <div class="advanced-filter-label">
+                                                <strong>資訊類型</strong>
+                                                <small>同類條件擇一符合</small>
+                                            </div>
+                                            <div class="advanced-filter-options" id="typeFilterOptions"></div>
+                                        </div>
+                                        <div class="advanced-filter-section">
+                                            <div class="advanced-filter-label">
+                                                <strong>建議關注部門</strong>
+                                                <small>同類條件擇一符合</small>
+                                            </div>
+                                            <div class="advanced-filter-options" id="departmentFilterOptions"></div>
+                                        </div>
+                                        <div class="advanced-filter-section">
+                                            <div class="advanced-filter-label">
+                                                <strong>風險程度</strong>
+                                                <small>同類條件擇一符合</small>
+                                            </div>
+                                            <div class="advanced-filter-options" id="riskFilterOptions"></div>
+                                        </div>
+                                        <div class="advanced-filter-section">
+                                            <div class="advanced-filter-label">
+                                                <strong>重要性</strong>
+                                                <small>同類條件擇一符合</small>
+                                            </div>
+                                            <div class="advanced-filter-options" id="importanceFilterOptions"></div>
+                                        </div>
+                                    </div>
+                                    <div class="advanced-filter-actions">
+                                        <span id="advancedFilterDraftSummary">尚未選擇條件</span>
+                                        <div>
+                                            <button type="button" class="secondary-button" id="clearAdvancedFilters">清除所有篩選</button>
+                                            <button type="button" class="primary-button" id="applyAdvancedFilters">完成</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="intelActiveFilters" class="d-active-filters" aria-label="目前套用的篩選條件" hidden></div>
+                        <div class="d-table-head"><span>發布日期</span><span>類型</span><span>公告與法規</span></div>
+                        <div class="d-table-body event-list" id="eventList"></div>
+                        <nav class="list-pagination" id="eventPagination" aria-label="監理資訊清單分頁"></nav>
+                    </section>
+
+                    <section class="d-dossier detail" id="eventDetail" aria-label="選取事件的監理分析" tabindex="-1">
+                        <div class="empty">正在取得監理資訊…</div>
+                    </section>
+                </div>
+            </div>
+
+            <div class="news-ticker hidden" id="latestTicker" aria-label="最新監理快訊">
+                <div class="ticker-label"><span aria-hidden="true"></span>最新快訊</div>
+                <div class="ticker-viewport"><div class="ticker-track" id="latestTickerTrack"></div></div>
+            </div>
+        </section>
+
+        <section id="qaView" class="hidden" aria-labelledby="qaTitle">
+            <div class="d-heading">
+                <div>
+                    <h2 id="qaTitle">監理問答助手</h2>
+                    <p>輸入問題或工作情境，查詢相關法規及原文。需要其他資訊時，會再請你補充。</p>
+                </div>
+            </div>
+            <div class="qa-workspace">
+                <div id="qaExamples" class="qa-examples" aria-label="提問範例">
+                    <span>你可以這樣問</span>
+                    <button type="button" data-example="保險經紀人管理規則規範哪些事項？">保險經紀人管理規則規範什麼？</button>
+                    <button type="button" data-example="我想把既有保戶的姓名與電話交給台灣的委外客服廠商，提醒續期繳費，資料不傳境外，應先查哪些相關法規？">客戶資料提供給委外廠商</button>
+                </div>
+                <form id="qaForm" class="qa-form">
+                    <div class="qa-input-heading"><label id="qaInputLabel" for="qaQuestion">問題或工作情境</label><button id="qaNewQuestion" type="button" class="qa-reset">開始新問題</button></div>
+                    <div id="qaConversation" class="qa-conversation" aria-label="本次問答" hidden></div>
+                    <textarea id="qaQuestion" rows="3" minlength="2" maxlength="500" required placeholder="例如：把保戶名單交給委外客服提醒繳費，需要注意哪些規定？" aria-describedby="qaScopeNote"></textarea>
+                    <details class="qa-filters">
+                        <summary>搜尋範圍</summary>
+                        <div class="qa-filter-fields">
+                            <label>資料類型<select id="qaType"><option value="全部">全部類型</option><option>法規</option><option>公告</option><option>裁罰</option><option>監理新聞</option><option>監理資訊</option></select></label>
+                            <label>發布／修正起日<input type="date" id="qaDateFrom"></label>
+                            <label>發布／修正迄日<input type="date" id="qaDateTo"></label>
+                        </div>
+                        <p>日期依官方發布或修正／公布日篩選，不代表法規生效期間。</p>
+                    </details>
+                    <div class="qa-submit-row">
+                        <p id="qaScopeNote">依已收錄的官方資料回答。同一問題可繼續補充，最多六次；請勿輸入客戶個資。</p>
+                        <button type="submit" id="qaSubmit">送出問題</button>
+                    </div>
+                    <p id="qaStatus" class="qa-status" role="status" aria-live="polite"></p>
+                </form>
+                <section id="qaResult" class="qa-result" aria-label="監理問答結果" aria-busy="false" tabindex="-1">
+                    <div class="qa-empty"><strong>查詢法規</strong><p>輸入問題或說明工作內容，回答會附上原文來源。</p></div>
+                </section>
+            </div>
+        </section>
+
+        <section id="managementView" class="hidden">
+            <div class="d-heading">
+                <div>
+                    <h2>管理摘要</h2>
+                    <p>選取一筆或多筆監理資訊，由 AI 彙整管理重點、可能影響與因應方向。</p>
+                </div>
+            </div>
+
+            <div class="management-actionbar">
+                <div class="management-actionbar-copy">
+                    <span id="managementSelectionCount" aria-live="polite">已選 0 筆</span>
+                    <p class="management-selection-hint" id="managementSelectionHint">請至少選擇一筆資訊。</p>
+                </div>
+                <button type="button" class="btn primary" id="reportBtn" disabled>
+                    產生管理摘要
+                </button>
+            </div>
+
+            <div class="management-grid">
+                <div class="card management-source-panel">
+                    <h2>選擇摘要資訊</h2>
+                    <div class="management-selection-search">
+                        <input id="managementSearch" type="search" placeholder="搜尋標題、來源或關鍵字" aria-label="搜尋摘要資訊">
+                        <select id="managementTypeFilter" aria-label="摘要資訊類型">
+                            <option value="全部">全部類型</option>
+                            <option value="法規">法規</option>
+                            <option value="公告">公告</option>
+                            <option value="裁罰">裁罰</option>
+                            <option value="監理新聞">監理新聞</option>
+                            <option value="監理資訊">監理資訊</option>
+                        </select>
+                    </div>
+                    <div class="management-selection-toolbar">
+                        <div>
+                            <button type="button" class="btn" id="selectManagementVisible">全選本頁</button>
+                            <button type="button" class="btn" id="clearManagementSelection">清除選取</button>
+                        </div>
+                    </div>
+                    <div id="priorityList" class="management-selection-list" aria-label="可納入管理摘要的資訊"></div>
+                    <nav class="list-pagination" id="managementPagination" aria-label="摘要資訊分頁"></nav>
+                    <details class="management-topics">
+                        <summary>已載入資訊的監理主題</summary>
+                        <div id="trendList"></div>
+                    </details>
+                </div>
+
+                <section class="card management-result-panel" aria-labelledby="managementResultTitle">
+                    <h2 id="managementResultTitle">摘要結果</h2>
+                    <div id="managementReportStatus" class="management-report-status" role="status" aria-live="polite" hidden></div>
+                    <div id="reportBox" class="report-box" tabindex="-1" aria-busy="false">
+                        <div class="management-report-empty">
+                            <strong>尚未產生摘要</strong>
+                            <p>選取一筆或多筆資訊後產生摘要，結果會附本次使用的官方來源。</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </div>
+</main>
+</div>
+
+<div class="modal-bg hidden" id="sourcesModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sourcesTitle">
+        <div class="modal-head">
+            <h2 id="sourcesTitle">資料來源狀態</h2>
+            <button class="btn" id="closeSources">關閉</button>
+        </div>
+        <div id="sourceStatusList"></div>
+    </div>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+
+<script>
+/* RegIntel v11.1 sidebar controller
+ * Own the toggle interaction here so it is not affected by legacy sidebar CSS/JS.
+ */
+(() => {
+    const sidebar = document.getElementById('sidebar');
+    const toggle = document.getElementById('sidebarToggle');
+    if (!sidebar || !toggle) return;
+
+    const storageKey = 'regintel-sidebar-collapsed';
+
+    const applyState = (collapsed) => {
+        sidebar.classList.toggle('collapsed', collapsed);
+        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        toggle.setAttribute('aria-label', collapsed ? '展開主選單' : '收合主選單');
+        toggle.title = collapsed ? '展開主選單' : '收合主選單';
+        try {
+            localStorage.setItem(storageKey, collapsed ? '1' : '0');
+        } catch (_) {}
+    };
+
+    let initialCollapsed = false;
+    try {
+        initialCollapsed = localStorage.getItem(storageKey) === '1';
+    } catch (_) {}
+    applyState(initialCollapsed);
+
+    /* Capture phase + stopImmediatePropagation prevents older sidebar handlers
+       from applying a second, conflicting toggle state. */
+    toggle.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        applyState(!sidebar.classList.contains('collapsed'));
+    }, true);
+})();
+</script>
+
+<script src="assets/js/core.js"></script>
+<script src="assets/js/pagination.js"></script>
+<script src="assets/js/dashboard.js"></script>
+<script src="assets/js/ai-analysis.js"></script>
+<script src="assets/js/impact-chain.js"></script>
+<script src="assets/js/law-comparison.js"></script>
+<script src="assets/js/detail-view.js"></script>
+<script src="assets/js/management.js"></script>
+<script src="assets/js/sources.js"></script>
+<script src="assets/js/regulatory-qa.js"></script>
+
+<script src="assets/js/app.js"></script>
+
+<script>
+/*
+ * UI-only wording layer (v11.1).
+ * Existing data-view values stay unchanged, so the original app logic remains compatible.
+ */
+(() => {
+    const viewTitle = document.getElementById('viewTitle');
+    const labels = {
+        intel: '監理情報',
+        management: '監理趨勢',
+        qa: '監理問答助手'
+    };
+
+    document.querySelectorAll('[data-view]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const next = labels[button.dataset.view];
+            if (!next || !viewTitle) return;
+            requestAnimationFrame(() => {
+                viewTitle.textContent = next;
+            });
+        });
+    });
+})();
+</script>
+
+</body>
+</html>

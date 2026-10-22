@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 from regintel.application import management_summary as summaries
 from regintel.web import Handler
+from tests.evidence_fixtures import supported_review_reply
 
 
 def event(index: int) -> dict:
@@ -42,6 +43,8 @@ class ManagementSelectionTests(unittest.TestCase):
         inputs = []
 
         def model(**kwargs):
+            if "checks" in kwargs["schema"].get("properties", {}):
+                return supported_review_reply(kwargs)
             inputs.append(kwargs["input_text"])
             return {
                 "headline": "管理摘要",

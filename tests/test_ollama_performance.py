@@ -55,17 +55,24 @@ class OllamaPerformanceTests(unittest.TestCase):
         self.assertEqual(timings.get("output_tokens"), 200)
         self.assertEqual(result["summary"], "source-grounded result")
 
+    def test_enterprise_answers_can_bound_generation_and_request_timeout(self):
+        with patch.object(ollama.urllib.request, "urlopen", return_value=io.BytesIO(b'{"message":{"content":"{}"}}')) as opened:
+            ollama.call_ollama_structured_json(instructions="demo", input_text="demo", schema={"type":"object"}, max_output_tokens=900, request_timeout=45)
+        body = json.loads(opened.call_args.args[0].data)
+        self.assertEqual(body["options"]["num_predict"], 900)
+        self.assertEqual(opened.call_args.kwargs["timeout"], 45)
+
     def test_thinking_modes_cannot_reuse_each_others_event_cache(self):
         event = {"id": "public-event", "description": "Official source."}
-        with patch.object(ai_support, "OLLAMA_THINK", False, create=True):
+        with patch.object(ai_support, "AI_PROVIDER", "ollama"), patch.object(ai_support, "OLLAMA_THINK", False, create=True):
             fast = ai_support.ai_event_cache_key(event)
-        with patch.object(ai_support, "OLLAMA_THINK", True, create=True):
+        with patch.object(ai_support, "AI_PROVIDER", "ollama"), patch.object(ai_support, "OLLAMA_THINK", True, create=True):
             thinking = ai_support.ai_event_cache_key(event)
         self.assertNotEqual(fast, thinking)
 
     def test_thinking_modes_cannot_reuse_each_others_summary_cache(self):
         events = [{"id": "public-event", "description": "Official source."}]
-        with patch.object(management_summary, "management_source_text", return_value="Official source."):
+        with patch.object(management_summary, "AI_PROVIDER", "ollama"), patch.object(management_summary, "management_source_text", return_value="Official source."):
             with patch.object(management_summary, "OLLAMA_THINK", False, create=True):
                 fast = management_summary.management_cache_key(events)
             with patch.object(management_summary, "OLLAMA_THINK", True, create=True):
@@ -84,6 +91,7 @@ class OllamaPerformanceTests(unittest.TestCase):
 
     def test_server_starts_preloading_in_the_background(self):
         with (
+            patch.object(web, "AI_PROVIDER", "ollama"),
             patch.object(web, "RegIntelHTTPServer") as server,
             patch.object(web, "probe_ollama", return_value={"reachable": True, "model_installed": True}),
             patch.object(web, "preload_ollama", return_value={"request_seconds": 0.1}) as preload,

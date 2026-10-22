@@ -2,6 +2,40 @@
    Detail
 ===================================================== */
 
+function renderEventEvidence(analysis){
+    const review = analysis.support_review;
+    if(!review){
+        return analysis.analysis_mode === 'AI 深度分析'
+            ? '<p class="detail-review-warning" role="status">此分析尚未做來源支持核對，請重新分析。</p>' : '';
+    }
+    const sources = new Map((review.sources || []).map(source=>[source.source_id, source]));
+    const labels = {summary:'摘要', management_summary:'主管摘要', event_nature:'事件性質', rating:'分級理由',
+        responsible_department:'建議關注部門', regulatory_points:'監理重點', departments:'部門影響',
+        impact_processes:'流程影響', attention_items:'注意事項', actions:'建議做法'};
+    const link = source=>{
+        try{
+            const url = new URL(source.url);
+            if(['https:', 'http:'].includes(url.protocol)){
+                return `<a href="${esc(url.href)}" target="_blank" rel="noopener noreferrer">${esc(source.title || '官方來源')}</a>`;
+            }
+        }catch(_){ /* Keep the title readable when the URL is unavailable. */ }
+        return esc(source.title || '官方來源');
+    };
+    return `
+        ${analysis.verification_notice ? `<p class="detail-review-warning" role="status">${esc(analysis.verification_notice)}</p>` : ''}
+        <details class="block detail-review">
+            <summary>查看分析依據與核對結果</summary>
+            <p>核對 ${esc(review.requested)} 項，保留 ${esc(review.supported)} 項，省略 ${esc(review.withheld)} 項。</p>
+            <p>採模型判讀、條件及金額檢查，仍可能誤判或漏判；法規適用性須由專業人員確認。</p>
+            ${review.source_is_excerpt ? '<p>本次只核對生成時使用的來源節錄，未涵蓋全文。</p>' : ''}
+            ${review.program_facts ? `<p>${esc(review.program_facts)}。這部分由程式整理，未計入模型核對項數。</p>` : ''}
+            ${(review.checks || []).map(row=>`<div class="detail-review-item">
+                <b>${esc(labels[row.id.split(':')[0]] || '分析內容')} · ${row.status === 'supported' ? '保留' : (row.status === 'unverified' ? '未完成核對' : '省略')}</b>
+                ${row.status === 'supported' ? `<p>${esc(row.text)}</p>${(row.citations || []).map(citation=>`<blockquote>${esc(citation.quote)}<br>${link(sources.get(citation.source_id) || {})}</blockquote>`).join('')}` : `<p>${esc(row.reason)}</p>`}
+            </div>`).join('')}
+        </details>`;
+}
+
 function renderDetail(
     triggerAI=true
 ){
@@ -45,6 +79,10 @@ function renderDetail(
 
     const hasLawComparison = analysis.content_source === '官方條文前後對照';
 
+    const analysisNote = String(analysis.analysis_note || '')
+        .replace(/規則(?:式)?備援(?:分析|結果|內容)?/g, '依規則產生的初步整理')
+        .replace(/(?:AI\s*)?深度分析/g, 'AI 分析');
+
 
     const aiIsLoading =
         state.aiLoading.has(
@@ -63,6 +101,10 @@ function renderDetail(
 
     const showAnalysisValues =
         isAI || aiFailed || aiHasInsufficientContent;
+    let analysisStatus = isAI ? 'AI 分析' : (state.ai.enabled ? (aiHasInsufficientContent ? 'AI 分析未完成' : 'AI 待分析') : '初步整理');
+    if(aiFailed) analysisStatus = isAI ? '重新分析未完成，保留原結果' : 'AI 分析未完成';
+    if(analysis.support_review?.unverified > 0) analysisStatus = '依據核對未完成';
+    if(aiIsLoading) analysisStatus = isAI ? '重新分析中…' : 'AI 分析中…';
 
     const unresolvedAiFields =
         isAI
@@ -194,9 +236,7 @@ function renderDetail(
 
 
                 <span id="aiAnalysisStatus" role="status" class="workflow ${aiIsLoading ? 'ai-loading' : (isAI ? 'ai' : '')}">
-                    ${aiIsLoading ? (isAI ? '重新分析中…' : 'AI 分析中…')
-                        : (aiFailed ? (isAI ? '重新分析未完成，保留原結果' : 'AI 分析未完成')
-                            : (isAI ? 'AI 深度分析' : (state.ai.enabled ? (aiHasInsufficientContent ? 'AI 分析未完成' : 'AI 待分析') : '規則備援')))}
+                    ${esc(analysisStatus)}
                 </span>
 
 
@@ -213,7 +253,7 @@ function renderDetail(
 
 
             <p>${esc(formatEventDate(event))} · ${esc(event.source || '官方資料')}</p>
-            ${!isAI && analysis.analysis_note ? `<p class="detail-source-note">${esc(analysis.analysis_note)}</p>` : ''}
+            ${!isAI && analysisNote ? `<p class="detail-source-note">${esc(analysisNote)}</p>` : ''}
             ${unresolvedAiFields.length ? `<p class="detail-source-note">${esc(unresolvedAiFields.join('、'))}尚無法由目前來源確認。</p>` : ''}
 
 
@@ -267,7 +307,7 @@ function renderDetail(
                     <div class="ai-stat">
 
                         <span>
-                            主要責任部門
+                            建議關注部門
                         </span>
 
                         <b>
@@ -290,10 +330,13 @@ function renderDetail(
 
                 ''
             }
+            <p class="detail-rating-reason">關注部門依公開監理資訊初步推估，實際適用性與權責須由公司確認。</p>
+            ${analysis.rating_reason && analysis.support_review ? `<p class="detail-rating-reason">分級依據：${esc(analysis.rating_reason)}</p>` : ''}
 
 
         </div>
 
+        ${renderEventEvidence(analysis)}
 
         <div class="block">
 
@@ -414,7 +457,7 @@ function renderDetail(
 
 
             <h3>
-                ${hasLawComparison ? '可能受影響部門（AI 推論）' : '受影響部門'}
+                ${hasLawComparison || analysis.support_review ? '可能受影響部門（初步判讀）' : '受影響部門'}
             </h3>
 
 
@@ -478,7 +521,7 @@ function renderDetail(
 
 
             <h3>
-                ${hasLawComparison ? '可能受影響流程（AI 推論）' : '可能受影響流程'}
+                ${hasLawComparison || analysis.support_review ? '可能受影響流程（初步判讀）' : '可能受影響流程'}
             </h3>
 
 
@@ -529,7 +572,7 @@ function renderDetail(
                 `
                 <div class="empty">
 
-                    尚無額外注意事項。
+                    ${analysis.support_review ? '目前沒有可保留的注意事項，請確認官方原文。' : '尚無額外注意事項。'}
 
                 </div>
                 `
@@ -543,7 +586,7 @@ function renderDetail(
 
 
             <h3>
-                ${hasLawComparison ? '建議因應（AI 推論）' : '建議因應'}
+                建議做法
             </h3>
 
 
@@ -590,7 +633,7 @@ function renderDetail(
 
         <${isAI ? 'details' : 'div'} class="ai-note">
             ${isAI ? '<summary>分析說明與模型資訊</summary>' : ''}
-            ${isAI && analysis.analysis_note ? `<p>${esc(analysis.analysis_note)}</p>` : ''}
+            ${isAI && analysisNote ? `<p>${esc(analysisNote)}</p>` : ''}
 
 
             ${
@@ -639,20 +682,20 @@ function renderDetail(
 
                             (
                                 aiHasInsufficientContent
-                                ? '官方來源未提供可解析內容，以下顯示規則備援結果；取得完整原文後才能進行 AI 深度分析。'
-                                : 'AI 深度分析尚未完成；以下內容為規則備援結果，請人工覆核。'
+                                ? '官方來源未提供可解析內容，以下為依規則產生的初步整理；取得完整原文後才能進行 AI 分析。'
+                                : 'AI 分析尚未完成；以下為依規則產生的初步整理，請人工覆核。'
                             )
 
                             :
 
-                            '以下先顯示規則備援結果；AI 深度分析完成後會更新風險、影響部門與因應建議。'
+                            '以下先顯示依規則產生的初步整理；AI 分析完成後會更新風險、可能受影響部門與建議做法。'
                         )
                     )
                 )
 
                 :
 
-                'AI 尚未啟用，目前顯示規則式備援內容。'
+                'AI 尚未啟用，目前顯示依規則產生的初步整理。'
             }
 
 

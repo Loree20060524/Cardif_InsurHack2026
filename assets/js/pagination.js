@@ -10,9 +10,8 @@ function pageWindow(view, events){
 
 function archiveSources(view){
     const byType = {'公告':'fsc_announcement', '裁罰':'fsc_penalty', '監理新聞':'reg_news'};
-    const type = view === 'management' ? state.managementType : state.sourceTypeFilter;
     return Object.entries(byType).filter(([name, key]) => {
-        if(type !== '全部' && type !== name) return false;
+        if(view === 'management' && state.managementType !== '全部' && state.managementType !== name) return false;
         if(view === 'intel' && state.filters.types.size && !state.filters.types.has(name)) return false;
         return state.history.sources[key]?.has_more !== false;
     }).map(([, key]) => key);
@@ -20,10 +19,10 @@ function archiveSources(view){
 
 function renderPagination(view, events, onPageChange){
     const element = $(view === 'intel' ? 'eventPagination' : 'managementPagination');
-    const title = view === 'intel' ? '最新公告與法規' : '摘要資訊';
+    const title = view === 'intel' ? '監理資訊清單' : '摘要資訊';
     const paging = state.pagination[view];
     const {start, items, pages} = pageWindow(view, events);
-    const busy = state.history.loading || (view === 'management' && state.managementReportLoading);
+    const busy = state.history.loading;
     const disabled = busy ? 'disabled' : '';
     const historyKeys = archiveSources(view);
     element.innerHTML = `

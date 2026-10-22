@@ -61,6 +61,10 @@ async function loadEvents(
 
         state.history.sources = data.history?.sources || {};
 
+        const retryAfter = Number(data.manual_retry_after_seconds);
+        state.manualRefreshRetryAt = data.manual_refresh_limited && Number.isFinite(retryAfter) && retryAfter > 0
+            ? Date.now() + retryAfter * 1000 : null;
+
 
         state.events =
             data.events
@@ -176,11 +180,7 @@ async function loadEvents(
 
             toast(
 
-                `更新頻率保護中，約 ${
-                    data.manual_retry_after_seconds
-                    ||
-                    0
-                } 秒後可再次強制更新。`
+                manualRefreshWaitText()
             );
 
         }
@@ -199,6 +199,7 @@ async function loadEvents(
     catch(error){
 
         console.error(
+            '監理資訊載入失敗（/api/events）：',
             error
         );
 
@@ -214,18 +215,21 @@ async function loadEvents(
         );
 
 
-        $('connectionNotice').innerHTML =
-
-            (
-                '<strong>'
-                +
-                '目前無法取得監理資料。'
-                +
-                '</strong> '
-                +
-                '請稍後重新整理頁面；若持續發生，請確認網站後端服務狀態。'
-            );
-
+        $('connectionNotice').innerHTML = `
+            <strong>目前無法取得資料，請稍後重試。</strong>
+            ${state.events.length ? '<span>目前保留上次取得的資料。</span>' : ''}
+            <button type="button" class="btn" id="retryLoadEvents">重新載入</button>`;
+        const retry = $('retryLoadEvents');
+        retry.onclick = async () => {
+            retry.disabled = true;
+            await loadEvents();
+        };
+        if(!state.events.length){
+            $('eventList').innerHTML = '<div class="d-empty">目前無法取得監理資訊。</div>';
+            $('eventDetail').innerHTML = '<div class="d-empty">目前無法取得監理資訊，請使用「重新載入」再試一次。</div>';
+            $('ledgerStatus').textContent = '資料載入失敗';
+            $('ledgerResultCount').textContent = '尚未取得資料';
+        }
 
     }
 
@@ -278,7 +282,7 @@ function showView(
     );
 
 
-    $('viewTitle').textContent = view === 'qa' ? 'AI 監理問答' :
+    $('viewTitle').textContent = view === 'qa' ? '監理問答助手' :
 
         view
         ===

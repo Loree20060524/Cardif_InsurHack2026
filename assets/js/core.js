@@ -13,8 +13,6 @@ const state = {
 
     selected:null,
 
-    sourceTypeFilter:'全部',
-
     query:'',
 
     filters:{
@@ -49,6 +47,8 @@ const state = {
     stale:false,
 
     lastSync:null,
+
+    manualRefreshRetryAt:null,
 
     ai:{
         enabled:false,
@@ -546,6 +546,7 @@ const EVENT_TYPE_FILTER_OPTIONS = [
     '法規',
     '公告',
     '監理新聞',
+    '監理資訊',
 ];
 
 const RISK_LEVEL_FILTER_OPTIONS = [

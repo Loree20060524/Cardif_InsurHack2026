@@ -15,7 +15,7 @@ async function loadFixture(payload, { force = false, offline = false } = {}) {
     };
     const messages = [];
     const context = vm.createContext({
-        $: id => elements[id],
+        $: id => elements[id] || (elements[id] = {innerHTML:'',textContent:'',disabled:false}),
         state: { history: {}, events: [], sources: {}, selected: null },
         fetch: async () => {
             if (offline) throw new Error('offline');
@@ -48,6 +48,7 @@ test('actual source failures remain visible and do not claim a successful full r
 test('hosted data failures do not ask the user to start a local Python server', async () => {
     const result = await loadFixture({}, { offline: true });
     assert.equal(result.hidden, false);
-    assert.match(result.notice.innerHTML, /網站後端服務/);
+    assert.match(result.notice.innerHTML, /目前無法取得資料/);
+    assert.match(result.notice.innerHTML, /重新載入/);
     assert.doesNotMatch(result.notice.innerHTML, /server\.py|本機/);
 });

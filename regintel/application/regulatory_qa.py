@@ -12,6 +12,7 @@ from ..domain.knowledge_search import KnowledgeIndex, public_documents
 from ..domain.text import clean_text, now_iso
 from ..infrastructure.json_store import load_json_file
 from ..infrastructure.ai import call_structured_json
+from .evidence_review import review_cited_claims, review_notice
 
 
 _CITATION_SCHEMA = {
@@ -40,6 +41,7 @@ QA_INSTRUCTIONS = (
     "保留與問題相關的前提、限制及例外。不同重點分開摘錄，不要只引用導言或法規名稱。"
     "inferences 只用於額外的合理推論，最多 2 項，每項 text 附 citations 原文依據；沒有必要推論時填空陣列。"
     "不得把問題、標題或問題的改寫當作推論回答。"
+    "不得把『其經當事人同意者』改成所有情況都必須同意，不新增原文未記載的必要條件。"
     "找不到支持的來源就不要產生該項回答；缺少的依據寫入 missing_information。"
     "預告、草案、法規沿革不能視為已生效條文。發布日、修正日與生效日須區分。"
     "僅有平台最新保存版本時，不可判斷過去某日的適用條文；請說明缺少該日期的歷史版本。"
@@ -144,12 +146,19 @@ def checked_claims(result: dict, sources: list[dict], question: str = "") -> tup
 
 
 def answer_regulatory_question(body: dict) -> dict:
+    mode = body.get("mode", "question")
+    if not isinstance(mode, str) or mode not in {"auto", "question", "scenario"}:
+        raise ValueError("問答請求格式不正確，請重新整理後再試。")
+    if mode in {"auto", "scenario"}:
+        from .scenario_consultation import answer_work_scenario
+        return answer_work_scenario(body, unified=mode == "auto")
     question, filters = validate_question(body)
     started = time.perf_counter()
     index = knowledge_index()
     sources = index.search(question, filters)
     retrieval_seconds = time.perf_counter() - started
     result, claims, dropped, model_seconds = {}, [], 0, 0.0
+    support_review = None
     if sources:
         if not _generation_lock.acquire(blocking=False):
             raise QABusyError("已有監理問答正在處理，請稍後再試。")
@@ -163,10 +172,16 @@ def answer_regulatory_question(body: dict) -> dict:
             result = call_structured_json(
                 instructions=QA_INSTRUCTIONS,
                 input_text=f"問題：{question}\n搜尋範圍：{filters}\n查詢時間：{now_iso()}\n\n{context}",
-                schema=QA_SCHEMA, context_window=16384,
+                schema=QA_SCHEMA, context_window=16384, max_output_tokens=1800, request_timeout=90,
             )
             model_seconds = time.perf_counter() - generation_started
             claims, dropped = checked_claims(result, sources, question)
+            facts = [claim for claim in claims if claim["kind"] == "fact"]
+            inferences, support_review = review_cited_claims(
+                [claim for claim in claims if claim["kind"] == "inference"], sources,
+                context=question, model=call_structured_json,
+            )
+            claims = facts + inferences
         finally:
             _generation_lock.release()
     missing = result.get("missing_information", [])
@@ -175,10 +190,13 @@ def answer_regulatory_question(body: dict) -> dict:
         missing.insert(0, "目前已收錄的官方資料不足以產生附有有效原文引用的回答，請縮小問題或調整搜尋範圍。")
     if dropped:
         missing.append("部分回答的來源編號或原文摘錄未通過檢查，已省略；仍需核對引用內容是否支持結論。")
+    if support_review and review_notice(support_review):
+        missing.append(review_notice(support_review))
     return {
         "question": question, "filters": filters, "status": "answered" if claims else "insufficient",
         "claims": claims, "sources": sources, "missing_information": missing,
+        "support_review": support_review,
         "model": AI_MODEL if sources else "", "generated_at": now_iso(),
         "scope": {"documents": index.document_count, "retrieved_documents": len({s["document_id"] for s in sources}), "passages": len(sources)},
-        "timing": {"retrieval_seconds": round(retrieval_seconds, 3), "model_seconds": round(model_seconds, 3), "total_seconds": round(time.perf_counter() - started, 3)},
+        "timing": {"retrieval_seconds": round(retrieval_seconds, 3), "model_seconds": round(model_seconds, 3), "review_seconds": support_review["seconds"] if support_review else 0, "total_seconds": round(time.perf_counter() - started, 3)},
     }

@@ -75,6 +75,10 @@ def call_ollama_structured_json(
 
     think: bool | None = None,
 
+    max_output_tokens: int | None = None,
+
+    request_timeout: float | None = None,
+
 ) -> dict[
     str,
     Any
@@ -137,6 +141,12 @@ def call_ollama_structured_json(
 
     if context_window is not None:
         request_body["options"]["num_ctx"] = context_window
+    if max_output_tokens is not None:
+        if not isinstance(max_output_tokens, int) or isinstance(max_output_tokens, bool) or max_output_tokens <= 0:
+            raise ValueError("max_output_tokens must be a positive integer")
+        request_body["options"]["num_predict"] = max_output_tokens
+    if request_timeout is not None and (not isinstance(request_timeout, (int, float)) or isinstance(request_timeout, bool) or request_timeout <= 0):
+        raise ValueError("request_timeout must be positive")
 
     effective_think = OLLAMA_THINK if think is None else think
     if effective_think is not None:
@@ -186,7 +196,7 @@ def call_ollama_structured_json(
 
         with open_url(
             request,
-            timeout=OLLAMA_TIMEOUT
+            timeout=OLLAMA_TIMEOUT if request_timeout is None else request_timeout
         ) as response:
 
             raw = response.read(

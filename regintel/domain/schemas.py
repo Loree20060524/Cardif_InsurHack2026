@@ -1,6 +1,7 @@
 """Structured output contracts for AI responses."""
 
 from __future__ import annotations
+from .rules import AI_ALLOWED_DEPARTMENTS
 
 
 
@@ -72,13 +73,17 @@ AI_ANALYSIS_SCHEMA = {
         },
 
 
+        "rating_reason": {"type": "string", "maxLength": 120},
+
         "responsible_department": {
             "type":
-                "string"
+                "string",
+            "enum": [*AI_ALLOWED_DEPARTMENTS, "待確認"],
         },
 
 
         "regulatory_points": {
+            "maxItems": 3,
 
             "type":
                 "array",
@@ -91,6 +96,7 @@ AI_ANALYSIS_SCHEMA = {
 
 
         "departments": {
+            "maxItems": 5,
 
             "type":
                 "array",
@@ -107,7 +113,8 @@ AI_ANALYSIS_SCHEMA = {
 
                     "department": {
                         "type":
-                            "string"
+                            "string",
+                        "enum": AI_ALLOWED_DEPARTMENTS,
                     },
 
                     "reason": {
@@ -125,6 +132,7 @@ AI_ANALYSIS_SCHEMA = {
 
 
         "impact_processes": {
+            "maxItems": 3,
 
             "type":
                 "array",
@@ -146,7 +154,8 @@ AI_ANALYSIS_SCHEMA = {
 
                     "department": {
                         "type":
-                            "string"
+                            "string",
+                        "enum": AI_ALLOWED_DEPARTMENTS,
                     },
 
                     "impact": {
@@ -166,6 +175,7 @@ AI_ANALYSIS_SCHEMA = {
 
 
         "attention_items": {
+            "maxItems": 3,
 
             "type":
                 "array",
@@ -178,6 +188,7 @@ AI_ANALYSIS_SCHEMA = {
 
 
         "actions": {
+            "maxItems": 3,
 
             "type":
                 "array",
@@ -204,6 +215,7 @@ AI_ANALYSIS_SCHEMA = {
         "importance",
         "responsible_department",
         "regulatory_points",
+        "rating_reason",
         "departments",
         "impact_processes",
         "attention_items",

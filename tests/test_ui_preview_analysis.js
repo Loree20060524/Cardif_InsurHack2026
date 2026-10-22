@@ -137,6 +137,7 @@ function bootPreview() {
         filteredEvents: () => state.events,
         $: () => new FakeElement(),
         renderList() {},
+        renderAdvancedFilters() {},
         renderDetail() {},
         renderManagement() {},
         showView() {},
@@ -201,6 +202,7 @@ test('completed AI analysis can be explicitly rerun after prompt changes', async
     const { context, event } = bootPreview();
     let requestCount = 0;
     event.analysis.analysis_mode = 'AI 深度分析';
+    event.analysis.support_review = {version:'event-support-v1', unverified:0};
     context.fetch = async () => {
         requestCount += 1;
         return {

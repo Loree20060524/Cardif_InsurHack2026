@@ -84,6 +84,27 @@ def compare_versions(before: dict, after: dict) -> dict:
             "signature": signature}
 
 
+def relocation_pairs(changes: list[dict]) -> list[tuple[dict, dict]]:
+    """Suggest unambiguous text matches, without equating legal effects."""
+    added = [row for row in changes if row["kind"] == "added"]
+    deleted = [row for row in changes if row["kind"] == "deleted"]
+    pairs, used = [], set()
+    for new in added:
+        text = compact_text(new["after"])
+        if not 40 <= len(text) <= 16000:
+            continue
+        candidates = sorted(
+            [(SequenceMatcher(None, compact_text(old["before"]), text, autojunk=False).ratio(), index, old)
+             for index, old in enumerate(deleted) if 40 <= len(compact_text(old["before"])) <= 16000],
+            key=lambda item: item[0], reverse=True,
+        )
+        if (candidates and candidates[0][0] >= .85 and candidates[0][1] not in used
+                and (len(candidates) == 1 or candidates[0][0] - candidates[1][0] >= .05)):
+            used.add(candidates[0][1])
+            pairs.append((candidates[0][2], new))
+    return pairs
+
+
 def comparison_evidence(comparisons: list[dict], max_chars: int = 10000) -> str:
     """Include whole changed articles only, with dates/sources and explicit scope."""
     parts, used = [], 0
@@ -93,18 +114,28 @@ def comparison_evidence(comparisons: list[dict], max_chars: int = 10000) -> str:
         before, after = comparison["before_version"], comparison["after_version"]
         heading = (f"官方條文差異資料 v2\n法規：{comparison['name']}\n比較日期：{before['date']} → {after['date']}（修正／公布日，非生效日）\n"
                    f"比較範圍：{comparison['scope_note']}\n前版來源：{before['url']}\n後版來源：{after['url']}\n")
-        rows = []
-        for change in comparison["changes"]:
+        pairs = relocation_pairs(comparison["changes"])
+        paired = {id(row) for pair in pairs for row in pair}
+        groups = [(list(pair), f"疑似移列：{pair[0]['article']} → {pair[1]['article']}。文字高度相似，須比較實質修改，不可僅憑新增條號稱為新增義務。\n") for pair in pairs]
+        groups += [([row], "") for row in comparison["changes"] if id(row) not in paired]
+
+        def render(change):
             inserted = [part['text'] for part in change.get('after_segments', []) if part['changed']]
             deleted = [part['text'] for part in change.get('before_segments', []) if part['changed']]
-            row = (f"{change['article']}（{change['kind']}）\n"
-                   f"實際新增文字片段：{inserted}\n實際刪除文字片段：{deleted}\n"
-                   f"前版原文：{change['before'] or '此版本無此條次'}\n後版原文：{change['after'] or '此版本無此條次'}\n")
+            fragments = (f"實際新增文字片段：{inserted}\n實際刪除文字片段：{deleted}\n"
+                         if change["kind"] == "modified" else "")
+            return (f"{change['article']}（{change['kind']}）\n{fragments}"
+                    f"前版原文：{change['before'] or '此版本無此條次'}\n後版原文：{change['after'] or '此版本無此條次'}\n")
+
+        rows, included = [], 0
+        for group, note in groups:
+            row = note + "".join(render(change) for change in group)
             if used + len(heading) + sum(map(len, rows)) + len(row) + 150 > max_chars:
                 continue
             rows.append(row)
+            included += len(group)
         if rows:
-            section = heading + "".join(rows) + f"本段提供 {len(rows)}/{len(comparison['changes'])} 條差異；未列條文及附件不在本次 AI 分析範圍。\n"
+            section = heading + "".join(rows) + f"本段提供 {included}/{len(comparison['changes'])} 條差異；未列條文及附件不在本次 AI 分析範圍。\n"
             parts.append(section)
             used += len(section)
     return "\n".join(parts)

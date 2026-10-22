@@ -8,6 +8,7 @@ venv/
 .env
 .env.*
 !.env.example
+.vercel/
 
 # RegIntel runtime caches and downloaded source snapshots
 regintel_ai_cache_v*.json
@@ -29,7 +30,6 @@ public/
 !/deployment_data/regintel_source_store_v10.json
 !/deployment_data/regintel_event_history_v10.json
 !/deployment_data/regintel_law_versions_v1.json
-.vercel/
 
 # Editor and operating-system files
 .idea/

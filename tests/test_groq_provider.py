@@ -51,6 +51,22 @@ class GroqProviderTests(unittest.TestCase):
                 ai.call_structured_json(instructions="", input_text="", schema={}, local_only=True)
             cloud.assert_not_called()
 
+    def test_provider_boundary_preserves_application_generation_limits(self):
+        for provider, function in (("ollama", "call_ollama_structured_json"), ("groq", "call_groq_structured_json")):
+            with self.subTest(provider=provider), patch.object(ai, "AI_PROVIDER", provider), patch.object(ai, function, return_value={"summary": "bounded"}) as model:
+                result = ai.call_structured_json(instructions="Only public evidence.", input_text="Public text", schema={},
+                                                 max_output_tokens=1800, request_timeout=60)
+                self.assertEqual(result["summary"], "bounded")
+                self.assertEqual(model.call_args.kwargs["max_output_tokens"], 1800)
+                self.assertEqual(model.call_args.kwargs["request_timeout"], 60)
+
+    def test_groq_request_respects_explicit_generation_limits(self):
+        payload = {"choices": [{"finish_reason": "stop", "message": {"content": "{}"}}]}
+        with patch.object(groq, "GROQ_API_KEY", "test-secret"), patch.object(groq.urllib.request, "urlopen", return_value=io.BytesIO(json.dumps(payload).encode())) as opened:
+            groq.call_groq_structured_json(instructions="", input_text="", schema={}, max_output_tokens=1800, request_timeout=60)
+        self.assertEqual(json.loads(opened.call_args.args[0].data)["max_completion_tokens"], 1800)
+        self.assertEqual(opened.call_args.kwargs["timeout"], 60)
+
     def test_provider_switch_cannot_reuse_other_provider_cache(self):
         with patch.object(ai_support, "AI_PROVIDER", "groq"):
             cloud_key = ai_support.ai_event_cache_key({"id": "same"})
