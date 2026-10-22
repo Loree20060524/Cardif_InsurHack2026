@@ -82,6 +82,11 @@ function groupStatusText(
 }
 
 
+function manualRefreshWaitText(){
+    const seconds = Math.ceil((state.manualRefreshRetryAt - Date.now()) / 1000);
+    return seconds > 0 ? `請稍候再更新（約 ${seconds} 秒後可重試）` : '請稍候再更新';
+}
+
 function sourceStatusText(
     source
 ){
@@ -98,7 +103,7 @@ function sourceStatusText(
             '使用既有資料',
 
         manual_cooldown:
-            '更新冷卻中',
+            manualRefreshWaitText(),
 
         http_error:
             '來源連線異常',

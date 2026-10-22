@@ -17,6 +17,7 @@ from .application.regulatory_qa import QABusyError, answer_regulatory_question
 from .application.refresh import invalidate_refresh_cache, refresh_data
 from .application.event_history import load_older_events
 from .application.law_comparison import get_law_comparisons
+from .application import enterprise_knowledge
 from .config import AI_PROMPT_VERSION, AI_PROVIDER_LABEL, APP_VERSION, BASE_DIR, OLLAMA_MODEL, PORT
 from .domain.risk_analysis import rule_based_analyze_event
 from .domain.text import clean_text, now_iso
@@ -174,7 +175,7 @@ class Handler(
         if path.startswith("/api/compliance/"):
             self.send_json({"ok": False, "error": "公司作業檢查功能已移除，請重新整理頁面。"}, status=410)
             return
-        if path not in {"/api/management-summary", "/api/events/history", "/api/regulatory-qa"}:
+        if path not in {"/api/management-summary", "/api/events/history", "/api/regulatory-qa", "/api/enterprise-knowledge/search", "/api/enterprise-knowledge/answer"}:
             self.send_json({"ok": False, "error": "找不到此服務。"}, status=404)
             return
         try:
@@ -186,6 +187,13 @@ class Handler(
                 raise ValueError("請提供有效的請求內容。")
         except (ValueError, UnicodeDecodeError) as exc:
             self.send_json({"ok": False, "error": "請求格式不正確，請檢查輸入內容。"}, status=400)
+            return
+        if path in {"/api/enterprise-knowledge/search", "/api/enterprise-knowledge/answer"}:
+            try:
+                operation = enterprise_knowledge.search if path.endswith("/search") else enterprise_knowledge.answer
+                self.send_json({"ok": True, "result": operation(body)})
+            except ValueError as exc:
+                self.send_json({"ok": False, "error": str(exc)}, status=400)
             return
         if path == "/api/regulatory-qa":
             try:
@@ -221,6 +229,32 @@ class Handler(
 
         if parsed.path.startswith("/api/compliance/"):
             self.send_json({"ok": False, "error": "公司作業檢查功能已移除，請重新整理頁面。"}, status=410)
+            return
+
+        if parsed.path == "/api/enterprise-knowledge":
+            self.send_json({"ok": True, "catalog": enterprise_knowledge.catalog()})
+            return
+        if parsed.path == "/api/enterprise-knowledge/document":
+            params = urllib.parse.parse_qs(parsed.query)
+            key = params.get("id", [""])[0]
+            download = params.get("download", [""])[0] == "1"
+            try:
+                if download:
+                    filename, source_text = enterprise_knowledge.document_text(key)
+                    data = ("\ufeff" + source_text).encode("utf-8")
+                else:
+                    data = enterprise_knowledge.document_html(key).encode("utf-8")
+            except ValueError:
+                self.send_error(404, "Document not found")
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; charset=utf-8" if download else "text/html; charset=utf-8")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Content-Length", str(len(data)))
+            if download:
+                self.send_header("Content-Disposition", "attachment; filename=enterprise-demo.txt; filename*=UTF-8''" + urllib.parse.quote(filename))
+            self.end_headers()
+            self.wfile.write(data)
             return
 
 

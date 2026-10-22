@@ -18,6 +18,14 @@
 .management-selection-copy strong{display:block;font-size:13px;line-height:1.6;overflow-wrap:anywhere;}
 .management-selection-copy small{display:block;margin-top:5px;color:var(--muted);font-size:11px;line-height:1.7;}
 .management-selection-hint,.management-report-scope{color:var(--muted);font-size:12px;line-height:1.7;}
+.management-report-status{margin:12px 0;padding:12px 14px;border-left:3px solid var(--ledger-accent,#08705e);background:#eef6f3;color:#345b50;font-size:13px;line-height:1.8;overflow-wrap:anywhere;}
+.management-report-status[hidden]{display:none;}
+.management-report-status.is-error{border-color:#b68b48;background:#fbf8ef;color:#765d30;}
+.management-review-warning{padding:12px 14px;border-left:3px solid #b68b48;background:#fbf8ef;color:#765d30;font-size:13px;line-height:1.8;}
+.management-review-details{font-size:12px;color:var(--ledger-muted,#62717c);}
+.management-review-details summary{cursor:pointer;}
+.management-review-item{margin-top:14px;padding-top:10px;border-top:1px solid var(--ledger-line,#d8e1e2);}
+.management-review-item blockquote{margin:8px 0;padding:8px 12px;border-left:2px solid #bdd4cc;line-height:1.9;}
 .management-report-sources summary{cursor:pointer;font-weight:800;font-size:13px;}
 .management-report-sources ol{padding-left:22px;max-height:340px;overflow-y:auto;}
 .management-report-sources li{margin:10px 0;line-height:1.7;}

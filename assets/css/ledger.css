@@ -328,6 +328,13 @@ body.ledger-app .d-header-nav button.active::after {
     box-shadow: 0 0 0 2px rgba(8, 112, 94, .07);
 }
 
+.d-active-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 0 14px 12px; color: var(--ledger-muted); font-size: 12px; }
+.d-active-filters[hidden] { display: none; }
+.d-active-filters > span { margin-right: 3px; }
+.d-active-filters button { max-width: 100%; padding: 4px 7px; border: 1px solid var(--ledger-line); border-radius: 4px; background: var(--ledger-accent-soft); color: var(--ledger-accent); font: inherit; overflow-wrap: anywhere; cursor: pointer; }
+.d-active-filters .d-clear-filters { border-color: transparent; background: transparent; text-decoration: underline; text-underline-offset: 3px; }
+.d-active-filters button:focus-visible { outline: 2px solid var(--ledger-accent); outline-offset: 2px; }
+
 .d-search > span {
     color: #819097;
     font-size: 18px;
@@ -505,12 +512,17 @@ body.ledger-app .advanced-filter-actions {
 }
 
 .d-dossier {
+    --detail-title-size: 20px;
+    --detail-body-size: 14px;
+    --detail-meta-size: 12px;
+
     position: sticky;
     top: 86px;
     max-height: calc(100vh - 106px);
     overflow: auto;
     padding: 18px 18px 20px !important;
     color: var(--ledger-ink) !important;
+    font-size: var(--detail-body-size);
 }
 
 .d-dossier .detail-title {
@@ -536,7 +548,7 @@ body.ledger-app .advanced-filter-actions {
     border-radius: 3px !important;
     background: #f6f8f7 !important;
     color: #53646b !important;
-    font-size: 11px;
+    font-size: var(--detail-meta-size);
     font-weight: 600;
 }
 
@@ -552,15 +564,16 @@ body.ledger-app .advanced-filter-actions {
     padding: 0;
     border: 0;
     color: #1e3038 !important;
-    font-size: 19px !important;
+    font-size: var(--detail-title-size) !important;
     font-weight: 700 !important;
     line-height: 1.5;
+    overflow-wrap: anywhere;
 }
 
 .d-dossier .detail-title > p {
     margin: 0;
     color: #7b898f !important;
-    font-size: 11px;
+    font-size: var(--detail-meta-size);
     line-height: 1.6;
 }
 
@@ -587,16 +600,23 @@ body.ledger-app .advanced-filter-actions {
 .d-dossier .ai-stat:first-child { padding-left: 0; }
 .d-dossier .ai-stat + .ai-stat { border-left: 1px solid var(--ledger-line); }
 .d-dossier .detail-title > .detail-source-note { margin-top: 8px; color: #76541c !important; }
+.d-dossier .detail-title > .detail-rating-reason { margin-top: 8px; font-size: var(--detail-body-size); color: #43565e !important; }
+.detail-review-warning { margin: 12px 0; padding: 10px 12px; background: #fbf8ef; border-left: 3px solid #b68b48; color: #765d30; font-size: 14px; line-height: 1.75; }
+.detail-review { overflow-wrap: anywhere; font-size: 14px; line-height: 1.75; }
+.detail-review > summary { cursor: pointer; color: #08705e; }
+.detail-review-item { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e9eded; }
+.detail-review-item blockquote { margin: 8px 0; padding: 8px 12px; border-left: 2px solid #bdd4cc; font-size: 14px; }
+.detail-review-item a { color: #08705e; font-size: 12px; }
 
 .d-dossier .ai-stat span {
     color: #7c898e;
-    font-size: 11px;
+    font-size: var(--detail-meta-size);
 }
 
 .d-dossier .ai-stat b {
     overflow-wrap: anywhere;
     color: #32464d;
-    font-size: 13px;
+    font-size: var(--detail-body-size);
     font-weight: 700;
 }
 
@@ -610,24 +630,27 @@ body.ledger-app .advanced-filter-actions {
 .d-dossier .block h3 {
     margin: 0 0 8px !important;
     color: #33464d !important;
-    font-size: 14px !important;
+    font-size: var(--detail-body-size) !important;
     font-weight: 700 !important;
 }
 
 .d-dossier .summary,
 .d-dossier .block p,
 .d-dossier .attention-list,
-.d-dossier .recommendations {
+.d-dossier .recommendations,
+.d-dossier .attention-list li,
+.d-dossier .recommendations li {
     color: #43565e !important;
-    font-size: 14px;
+    font-size: var(--detail-body-size);
     line-height: 1.75;
+    overflow-wrap: anywhere;
 }
 
 .d-dossier .source-link {
     display: inline-block;
     margin-top: 7px;
     color: #08705e !important;
-    font-size: 12px;
+    font-size: var(--detail-meta-size);
     font-weight: 600;
     text-decoration: none;
 }
@@ -652,7 +675,7 @@ body.ledger-app .advanced-filter-actions {
 
 .d-dossier .detail-impact-overview > summary {
     color: #60717b;
-    font-size: 12px;
+    font-size: var(--detail-body-size);
 }
 
 .d-dossier .detail-impact-overview[open] > summary { margin-bottom: 12px; }
@@ -674,12 +697,12 @@ body.ledger-app .advanced-filter-actions {
 
 .d-dossier .impact b {
     color: #31454c;
-    font-size: 14px;
+    font-size: var(--detail-body-size);
 }
 
 .d-dossier .impact p {
     margin: 3px 0 0;
-    font-size: 14px;
+    font-size: var(--detail-body-size);
 }
 
 .d-dossier .attention-list,
@@ -709,12 +732,12 @@ body.ledger-app .advanced-filter-actions {
 .d-dossier .chain-card li,
 .d-dossier .process-item b,
 .d-dossier .process-item p {
-    font-size: 14px;
+    font-size: var(--detail-body-size);
     line-height: 1.75;
 }
 
 .d-dossier .process-item small {
-    font-size: 11px;
+    font-size: var(--detail-meta-size);
 }
 
 .d-dossier .process-item {
@@ -741,7 +764,7 @@ body.ledger-app .advanced-filter-actions {
     border-left: 2px solid #8bb9aa;
     background: #f4f8f6;
     color: #67777b;
-    font-size: 12px;
+    font-size: var(--detail-meta-size);
     line-height: 1.65;
 }
 
@@ -790,7 +813,7 @@ body.ledger-app .advanced-filter-actions {
     border-radius: 4px !important;
     background: #fff !important;
     color: #4c6067 !important;
-    font-size: 12px;
+    font-size: var(--detail-meta-size);
     box-shadow: none !important;
 }
 
@@ -803,7 +826,7 @@ body.ledger-app .advanced-filter-actions {
 .d-dossier .detail-actions-note {
     margin: 8px 0 0;
     color: var(--ledger-muted);
-    font-size: 12px;
+    font-size: var(--detail-meta-size);
     line-height: 1.65;
 }
 

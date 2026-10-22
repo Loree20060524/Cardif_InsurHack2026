@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from regintel.application import event_analysis, refresh
+from regintel.application.event_evidence import EVENT_REVIEW_VERSION
 from regintel.domain.law_changes import detect_law_changes, merge_recent_law_signals
 
 
@@ -76,6 +77,7 @@ class BaselineRecoveryTests(unittest.TestCase):
             ),
         }
         cached = {"analysis_mode": "AI 深度分析", "summary": "已核對來源內容"}
+        cached["support_review"] = {"version": EVENT_REVIEW_VERSION, "unverified": 0}
         with (
             patch.object(event_analysis, "ai_event_cache_key", return_value="key"),
             patch.object(

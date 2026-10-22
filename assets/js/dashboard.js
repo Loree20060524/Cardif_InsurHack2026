@@ -292,7 +292,7 @@ function renderAdvancedFilters(){
                     }
 
 
-                    updateAdvancedFilterPresentation();
+                    applyAdvancedFilterDraft(false);
                 };
         }
     );
@@ -331,13 +331,14 @@ function clearAdvancedFilterDraft(){
         riskLevels:new Set(),
         importanceLevels:new Set(),
     };
-
-
+    state.query = '';
+    $('search').value = '';
+    applyAdvancedFilterDraft(false);
     renderAdvancedFilters();
 }
 
 
-function applyAdvancedFilterDraft(){
+function applyAdvancedFilterDraft(closePanel=true){
 
     state.pagination.intel.page = 1;
 
@@ -347,35 +348,47 @@ function applyAdvancedFilterDraft(){
         );
 
 
-    state.advancedFilterOpen =
-        false;
-
-
-    const visible =
-        filteredEvents();
-
-
-    if(
-        visible.length
-        &&
-        !visible.some(
-            event =>
-                event.id
-                ===
-                state.selected
-        )
-    ){
-
-        state.selected =
-            visible[0].id;
-    }
-
-
-    renderAdvancedFilters();
-
+    if(closePanel) state.advancedFilterOpen = false;
+    // Keep checkbox focus while applying a change immediately.
+    if(closePanel) renderAdvancedFilters();
+    else updateAdvancedFilterPresentation();
     renderList();
+}
 
-    renderDetail();
+function setIntelSourceType(type){
+    state.filters.types = new Set(type === '全部' ? [] : [type]);
+    state.filterDraft.types = new Set(state.filters.types);
+    state.pagination.intel.page = 1;
+    renderAdvancedFilters();
+    renderList();
+}
+
+function renderActiveIntelFilters(){
+    const element = $('intelActiveFilters');
+    if(!element) return;
+    const labels = {types:'類型', departments:'部門', riskLevels:'風險', importanceLevels:'重要性'};
+    const conditions = Object.entries(labels).flatMap(([group,label]) =>
+        [...state.filters[group]].map(value => ({group,value,label:`${label}：${value}`})));
+    if(state.query.trim()) conditions.unshift({group:'query',value:state.query,label:`關鍵字：${state.query.trim()}`});
+    element.hidden = !conditions.length;
+    element.innerHTML = conditions.length ? `<span>目前條件</span>${conditions.map(item =>
+        `<button type="button" data-filter-group="${item.group}" data-filter-value="${esc(item.value)}" aria-label="移除${esc(item.label)}">${esc(item.label)} <span aria-hidden="true">×</span></button>`
+    ).join('')}<button type="button" class="d-clear-filters" data-clear-filters>清除所有篩選</button>` : '';
+    element.querySelectorAll('[data-filter-group]').forEach(button => {
+        button.onclick = () => {
+            const {filterGroup,filterValue} = button.dataset;
+            if(filterGroup === 'query'){
+                state.query = '';
+                $('search').value = '';
+            }else state.filters[filterGroup].delete(filterValue);
+            state.filterDraft = copyAdvancedFilters(state.filters);
+            state.pagination.intel.page = 1;
+            renderAdvancedFilters();
+            renderList();
+        };
+    });
+    const clear = element.querySelector('[data-clear-filters]');
+    if(clear) clear.onclick = clearAdvancedFilterDraft;
 }
 
 
@@ -385,7 +398,6 @@ function applyAdvancedFilterDraft(){
 
 function ledgerEvents(){
     return filteredEvents()
-        .filter(event => state.sourceTypeFilter === '全部' || sourceType(event) === state.sourceTypeFilter)
         .slice()
         .sort((a, b) => {
             const dateValue = event => new Date(event.published_at || event.detected_at || 0).getTime() || 0;
@@ -394,7 +406,7 @@ function ledgerEvents(){
 }
 
 function renderList(){
-
+    renderActiveIntelFilters();
     const sourceCounts = new Map();
 
     state.events.forEach(event => {
@@ -410,17 +422,15 @@ function renderList(){
     ];
 
     $('sourceTypeList').innerHTML = sourceOptions.map(([type, count]) => `
-        <button type="button" class="d-source-option ${state.sourceTypeFilter === type ? 'active' : ''}"
-            data-source-type="${esc(type)}" aria-pressed="${state.sourceTypeFilter === type}">
+        <button type="button" class="d-source-option ${(type === '全部' ? !state.filters.types.size : state.filters.types.has(type)) ? 'active' : ''}"
+            data-source-type="${esc(type)}" aria-pressed="${type === '全部' ? !state.filters.types.size : state.filters.types.has(type)}">
             <span>${esc(type)}</span><small>${count}</small>
         </button>
     `).join('');
 
     $('sourceTypeList').querySelectorAll('[data-source-type]').forEach(button => {
         button.onclick = () => {
-            state.sourceTypeFilter = button.dataset.sourceType;
-            state.pagination.intel.page = 1;
-            renderList();
+            setIntelSourceType(button.dataset.sourceType);
         };
     });
 

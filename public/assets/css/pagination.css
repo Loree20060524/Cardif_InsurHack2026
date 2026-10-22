@@ -1,0 +1,46 @@
+.list-pagination {
+    padding: 12px 16px;
+    border-top: 1px solid var(--ledger-line, #d9e1e5);
+    background: #fff;
+    font-size: 11px;
+    color: #62717c;
+}
+
+.pagination-summary,
+.pagination-actions,
+.pagination-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pagination-actions { margin-top: 10px; }
+.pagination-navigation { justify-content: flex-start; }
+.list-pagination label { white-space: nowrap; }
+
+.list-pagination select,
+.list-pagination button {
+    min-height: 30px;
+    border: 1px solid #cbd7d9;
+    border-radius: 4px;
+    background: #fff;
+    color: #43545d;
+    padding: 4px 7px;
+    font: inherit;
+}
+
+.list-pagination button { cursor: pointer; }
+.list-pagination button:hover:not(:disabled) { border-color: #08705e; background: #eaf4f1; }
+.list-pagination button:disabled,
+.list-pagination select:disabled { opacity: .45; cursor: default; }
+.list-pagination .pagination-history { color: #08705e; }
+.list-pagination :focus-visible { outline: 2px solid #08705e; outline-offset: 2px; }
+.d-table-body { max-height: calc(100vh - 380px); }
+#managementPagination { margin-bottom: 12px; padding-right: 0; padding-left: 0; }
+
+@media (max-width: 700px) {
+    .d-table-body { max-height: 48vh; }
+    .list-pagination { padding: 10px; }
+}

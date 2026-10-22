@@ -55,6 +55,13 @@ class OllamaPerformanceTests(unittest.TestCase):
         self.assertEqual(timings.get("output_tokens"), 200)
         self.assertEqual(result["summary"], "source-grounded result")
 
+    def test_enterprise_answers_can_bound_generation_and_request_timeout(self):
+        with patch.object(ollama.urllib.request, "urlopen", return_value=io.BytesIO(b'{"message":{"content":"{}"}}')) as opened:
+            ollama.call_ollama_structured_json(instructions="demo", input_text="demo", schema={"type":"object"}, max_output_tokens=900, request_timeout=45)
+        body = json.loads(opened.call_args.args[0].data)
+        self.assertEqual(body["options"]["num_predict"], 900)
+        self.assertEqual(opened.call_args.kwargs["timeout"], 45)
+
     def test_thinking_modes_cannot_reuse_each_others_event_cache(self):
         event = {"id": "public-event", "description": "Official source."}
         with patch.object(ai_support, "OLLAMA_THINK", False, create=True):

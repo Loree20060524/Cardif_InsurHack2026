@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from regintel.application import event_analysis as analysis
+from regintel.application.event_evidence import EVENT_REVIEW_VERSION
 from regintel import web
 
 
@@ -19,12 +20,15 @@ class AnalysisRetryTests(unittest.TestCase):
                  "description": "保險業辦理投資作業應依規定建立內部控制制度，保存投資評估、核准及覆核紀錄，並定期檢查風險限額。"}
         old = {"analysis_mode": "AI 深度分析", "summary": "先前結果"}
         new = {"analysis_mode": "AI 深度分析", "summary": "重新產生的結果"}
+        for item in (old, new):
+            item["support_review"] = {"version": EVENT_REVIEW_VERSION, "unverified": 0}
         cache = {"analyses": {analysis.ai_event_cache_key(event): old}}
         with tempfile.TemporaryDirectory() as directory, \
              patch.object(analysis, "AI_CACHE_FILE", Path(directory) / "ai.json"), \
              patch.object(analysis, "load_ai_cache", return_value=cache), \
              patch.object(analysis, "call_ollama_structured_json", return_value={}) as model, \
-             patch.object(analysis, "sanitize_ai_analysis", return_value=new):
+             patch.object(analysis, "sanitize_ai_analysis", return_value=dict(new)), \
+             patch.object(analysis, "review_event_analysis", return_value=new):
             self.assertEqual(analysis.analyze_event_with_ai(event), old)
             model.assert_not_called()
             self.assertEqual(analysis.analyze_event_with_ai(event, force=True), new)

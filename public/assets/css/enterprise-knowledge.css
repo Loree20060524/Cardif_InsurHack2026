@@ -1,0 +1,58 @@
+/* Enterprise knowledge and IT support */
+.ek-workspace { overflow-wrap: anywhere; }
+.ek-heading { margin: 22px 0; }
+.ek-heading > span { font-size: 12px; color: #08705e; font-weight: 600; }
+.ek-heading h3 { margin: 6px 0; font-size: 22px; }
+.ek-heading p { margin: 0; color: #62756c; font-size: 14px; line-height: 1.8; }
+.ek-layout { display: grid; grid-template-columns: minmax(0,1fr) 286px; align-items: start; gap: 18px; }
+.ek-layout > div { min-width: 0; }
+.ek-card { padding: 24px; margin-bottom: 18px; border: 1px solid var(--ledger-line); border-radius: 6px; background: #fff; }
+.ek-card h3 { margin: 0 0 12px; font-size: 16px; }
+.ek-card h4 { margin: 22px 0 10px; font-size: 15px; }
+.ek-label { display: block; margin-bottom: 12px; font-size: 16px; font-weight: 600; }
+#ekQuestion { box-sizing: border-box; width: 100%; min-height: 124px; resize: vertical; padding: 13px; border: 1px solid #c9d6cf; border-radius: 4px; color: #253d32; background: #fff; font: inherit; font-size: 14px; line-height: 1.8; }
+.ek-workspace button { cursor: pointer; padding: 9px 14px; border: 1px solid #c4d3cb; border-radius: 4px; background: #fff; color: #176454; font: inherit; font-size: 13px; }
+.ek-workspace button:disabled { opacity: .55; cursor: default; }
+.ek-workspace :is(button,a,textarea,select):focus-visible { outline: 2px solid var(--ledger-accent); outline-offset: 3px; }
+.ek-workspace a { color: #08705e; text-underline-offset: 3px; }
+.ek-submit { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin-top: 16px; }
+.ek-submit label { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #63756a; }
+.ek-submit select { padding: 8px 12px; border: 1px solid #c9d6cf; border-radius: 4px; background: #fff; color: #2a4135; font: inherit; font-size: 13px; }
+.ek-submit #ekSubmit { background: #08705e; border-color: #08705e; color: #fff; }
+#ekScope, .ek-muted { color: #738077; font-size: 12px; line-height: 1.8; }
+#ekStatus { margin: 10px 0; color: #346751; font-size: 13px; line-height: 1.8; }
+#ekStatus:empty { display: none; }
+.ek-examples { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5ebe7; }
+.ek-examples > span { grid-column: 1 / -1; font-size: 12px; color: #6e7d73; }
+.ek-examples button { text-align: left; line-height: 1.8; font-size: 12px; background: #f8faf9; }
+.ek-library { position: sticky; top: 86px; padding: 20px; }
+.ek-library-title { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ek-library-title h3 { font-size: 15px; }
+.ek-library-title > span, .ek-library > p { color: #788278; font-size: 11px; line-height: 1.8; }
+#ekLibraryList { max-height: 62vh; overflow-y: auto; padding-right: 5px; }
+.ek-file { padding: 14px 0; border-top: 1px solid #e3eae5; }
+.ek-file > span, .ek-file small { display: block; color: #7a877d; font-size: 11px; line-height: 1.8; }
+.ek-file > a:not(.ek-download) { display: block; margin: 5px 0; font-size: 13px; font-weight: 600; line-height: 1.8; text-decoration: none; }
+.ek-download { display: inline-block; margin-top: 7px; font-size: 12px; }
+.ek-answer-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+.ek-answer-heading > span { font-size: 11px; color: #6a8272; }
+.ek-asked { font-size: 14px; font-weight: 600; line-height: 1.8; }
+.ek-message { padding: 12px 14px; background: #f7f4e9; color: #7c652f; font-size: 13px; line-height: 1.8; }
+.ek-point { padding: 14px 0; border-top: 1px solid #e4ebe6; }
+.ek-point > p, .ek-actions p { margin: 0 0 9px; font-size: 14px; line-height: 1.9; }
+.ek-actions { padding-left: 22px; }
+.ek-actions > li { margin: 14px 0; }
+.ek-citation { color: #5f7667; font-size: 12px; line-height: 1.8; }
+.ek-citation > summary { cursor: pointer; }
+.ek-citation blockquote { margin: 10px 0; padding: 12px; border-left: 2px solid #b5cebd; background: #f4f8f5; color: #425f4d; font-size: 13px; }
+.ek-followups { margin-top: 18px; padding: 14px; background: #edf5ef; font-size: 14px; line-height: 1.8; }
+.ek-followups ul { margin: 8px 0; padding-left: 20px; }
+.ek-followups p { font-size: 12px; }
+.ek-match { padding: 18px 0; border-top: 1px solid #e2eae5; }
+.ek-match > div > span { display: block; font-size: 11px; color: #738278; }
+.ek-match > div > a { display: inline-block; margin: 6px 0; font-size: 15px; font-weight: 600; text-decoration: none; }
+.ek-match > strong { display: block; font-size: 13px; }
+.ek-match > blockquote { margin: 10px 0; padding: 12px; background: #f6f9f7; font-size: 13px; line-height: 1.9; color: #50685a; white-space: pre-wrap; }
+.ek-match > small { display: block; font-size: 11px; color: #7a877d; }
+@media (max-width:900px) { .ek-layout { grid-template-columns: minmax(0,1fr); } .ek-library { position: static; } #ekLibraryList { max-height: 400px; } }
+@media (max-width:600px) { .ek-card { padding: 18px; } .ek-examples { grid-template-columns: minmax(0,1fr); } .ek-submit { align-items: stretch; flex-direction: column; } .ek-submit label { justify-content: space-between; } }

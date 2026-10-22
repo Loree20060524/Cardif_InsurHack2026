@@ -8,6 +8,7 @@ venv/
 .env
 .env.*
 !.env.example
+.vercel/
 
 # RegIntel runtime caches and downloaded source snapshots
 regintel_ai_cache_v*.json
