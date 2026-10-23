@@ -18,7 +18,7 @@
 
 ### Groq GPT-OSS 120B
 
-複製 `.env.example` 為 `.env.local`，填入 `GROQ_API_KEY`，再執行 `python server.py`。`.env.local` 已排除 Git 及部署上傳，只由 Python 後端讀取。模型預設為 `openai/gpt-oss-120b`，推理程度預設 `low`；可將 `GROQ_REASONING_EFFORT` 設為 `medium` 或 `high`。所有 AI 功能共用所選供應商，保留原文引用檢查。
+複製 `.env.example` 為 `.env.local`，將 `AI_PROVIDER` 改為 `groq` 並填入 `GROQ_API_KEY`，再執行 `python server.py`。`.env.local` 已排除 Git 及部署上傳，只由 Python 後端讀取。模型預設為 `openai/gpt-oss-120b`，推理程度預設 `low`；可將 `GROQ_REASONING_EFFORT` 設為 `medium` 或 `high`。所有 AI 功能共用所選供應商，保留原文引用檢查。
 
 ### 部署至 Vercel
 
@@ -41,6 +41,8 @@ Vercel 的讀寫快取放在 `/tmp`，一般瀏覽直接使用已收錄快照，
 ### 本機 Ollama
 
 預設使用本機 Ollama 與 qwen3:4b，可直接用一般 Python 啟動，不需要建立或啟用虛擬環境：
+
+若已有 `.env.local`，請確認其中為 `AI_PROVIDER=ollama`。本機不會只因保存了 `GROQ_API_KEY` 就自動選擇雲端；PowerShell 的 `$env:AI_PROVIDER` 優先於 `.env.local`，可用 `$env:AI_PROVIDER = "ollama"` 明確指定。Vercel 預設使用 Groq。
 
 ```powershell
 ollama pull qwen3:4b

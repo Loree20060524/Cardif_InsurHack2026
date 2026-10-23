@@ -177,7 +177,8 @@ EVENT_HISTORY_FILE = DATA_DIR / "regintel_event_history_v10.json"
 LAW_VERSIONS_FILE = DATA_DIR / "regintel_law_versions_v1.json"
 
 
-AI_PROVIDER = os.environ.get("AI_PROVIDER", "groq" if os.environ.get("GROQ_API_KEY") else "ollama").strip().lower()
+# Keeping a cloud key locally must not switch inference away from Ollama.
+AI_PROVIDER = os.environ.get("AI_PROVIDER", "groq" if IS_VERCEL else "ollama").strip().lower()
 if AI_PROVIDER not in {"ollama", "groq"}:
     raise ValueError("AI_PROVIDER 必須是 ollama 或 groq。")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
