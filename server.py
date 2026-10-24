@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Backward-compatible command-line entry point for RegIntel."""
+"""Backward-compatible command-line entry point for 法遵雷達."""
 
 from regintel.web import Handler, main
 

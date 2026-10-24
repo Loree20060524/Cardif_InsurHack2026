@@ -609,16 +609,16 @@ def main():
     except OSError as exc:
         if exc.errno != errno.EADDRINUSE and getattr(exc, "winerror", None) != 10048:
             raise
-        print(f"RegIntel 未啟動：連接埠 {PORT} 已有服務使用。")
-        print(f"若 RegIntel 已在執行，請直接開啟 http://127.0.0.1:{PORT}")
-        print("如需重新啟動，請先停止原本的 RegIntel 服務，再執行 server.py。")
+        print(f"法遵雷達未啟動：連接埠 {PORT} 已有服務使用。")
+        print(f"若法遵雷達已在執行，請直接開啟 http://127.0.0.1:{PORT}")
+        print("如需重新啟動，請先停止原本的法遵雷達服務，再執行 server.py。")
         return 1
 
     print(
         (
-            f"RegIntel v{APP_VERSION}｜"
+            f"法遵雷達 v{APP_VERSION}｜"
             "保險業 AI 監理情報"
-            "與風險預警平台"
+            "與異動分析平台"
         )
     )
 

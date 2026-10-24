@@ -49,7 +49,7 @@
     const dHeader = document.createElement('header');
     dHeader.className = 'd-header';
     dHeader.innerHTML = `
-        <div class="d-brand"><strong>RegIntel</strong><span>保險監理情報</span></div>
+        <div class="d-brand"><strong>法遵雷達</strong><span>保險監理情報</span></div>
         <nav aria-label="預覽導覽"><button type="button" class="active" data-d-view="intel">監理情報</button><button type="button" data-d-view="management">管理摘要</button></nav>
         <div class="d-header-actions"><span class="d-connect"><i></i> 官方來源資料</span><button type="button" data-d-sources>來源狀態</button><button type="button" class="d-refresh" data-d-refresh>同步資料 ↗</button></div>
     `;
