@@ -609,14 +609,14 @@ def main():
     except OSError as exc:
         if exc.errno != errno.EADDRINUSE and getattr(exc, "winerror", None) != 10048:
             raise
-        print(f"法遵雷達未啟動：連接埠 {PORT} 已有服務使用。")
-        print(f"若法遵雷達已在執行，請直接開啟 http://127.0.0.1:{PORT}")
-        print("如需重新啟動，請先停止原本的法遵雷達服務，再執行 server.py。")
+        print(f"法遵前哨站未啟動：連接埠 {PORT} 已有服務使用。")
+        print(f"若法遵前哨站已在執行，請直接開啟 http://127.0.0.1:{PORT}")
+        print("如需重新啟動，請先停止原本的法遵前哨站服務，再執行 server.py。")
         return 1
 
     print(
         (
-            f"法遵雷達 v{APP_VERSION}｜"
+            f"法遵前哨站 v{APP_VERSION}｜"
             "保險業 AI 監理情報"
             "與異動分析平台"
         )

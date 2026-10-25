@@ -10,7 +10,7 @@ venv/
 !.env.example
 .vercel/
 
-# RegIntel runtime caches and downloaded source snapshots
+# 法遵前哨站 runtime caches and downloaded source snapshots
 regintel_ai_cache_v*.json
 regintel_cache_v*.json
 regintel_source_store_v*.json

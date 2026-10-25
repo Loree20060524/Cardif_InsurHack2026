@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Backward-compatible command-line entry point for 法遵雷達."""
+"""Backward-compatible command-line entry point for 法遵前哨站."""
 
 from regintel.web import Handler, main
 

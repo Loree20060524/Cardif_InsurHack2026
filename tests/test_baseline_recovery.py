@@ -1,4 +1,4 @@
-"""Regression checks for restoring the original RegIntel baseline safely."""
+"""Regression checks for restoring the original 法遵前哨站 baseline safely."""
 
 from __future__ import annotations
 
