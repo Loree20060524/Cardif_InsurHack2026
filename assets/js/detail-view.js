@@ -2,13 +2,36 @@
    Detail
 ===================================================== */
 
-function renderEventEvidence(analysis){
+function eventReviewPresentation(analysis){
+    if(analysis.analysis_mode !== 'AI 深度分析') return null;
     const review = analysis.support_review;
     if(!review){
-        return analysis.analysis_mode === 'AI 深度分析'
-            ? '<p class="detail-review-warning" role="status">此分析尚未做來源支持核對，請重新分析。</p>' : '';
+        return {tone:'pending', label:'依據待核對',
+            message:'此分析尚未做來源支持核對，可重新分析以補齊紀錄。', canRetry:true};
     }
-    const sources = new Map((review.sources || []).map(source=>[source.source_id, source]));
+    const counts = ['requested', 'supported', 'withheld', 'unverified'];
+    const validCounts = counts.every(key=>Number.isInteger(review[key]) && review[key] >= 0)
+        && review.requested > 0 && review.supported + review.withheld === review.requested
+        && review.unverified <= review.withheld;
+    if(!validCounts){
+        return {tone:'pending', label:'依據待核對',
+            message:'目前尚無完整的來源核對紀錄，可重新分析後查看結果。', canRetry:true};
+    }
+    if(review.unverified > 0){
+        return {tone:'pending', label:'部分依據待核對',
+            message:`本次有 ${review.unverified} 項結論尚待完成來源核對，相關判讀暫不顯示。可查看核對明細或重新分析。`, canRetry:true};
+    }
+    return {tone:'complete', label:'依據已核對',
+        message:review.withheld > 0
+            ? `已完成 ${review.requested} 項來源核對，保留 ${review.supported} 項具原文支持的內容；其餘 ${review.withheld} 項未採用。`
+            : `已完成 ${review.requested} 項來源核對，引用原文與逐項結果可於下方查看。`, canRetry:false};
+}
+
+function renderEventEvidence(analysis, {isLoading=false, updateFailed=false}={}){
+    const presentation = eventReviewPresentation(analysis);
+    if(!presentation) return '';
+    const review = analysis.support_review;
+    const sources = new Map((review?.sources || []).map(source=>[source.source_id, source]));
     const labels = {summary:'摘要', management_summary:'主管摘要', event_nature:'事件性質', rating:'分級理由',
         responsible_department:'建議關注部門', regulatory_points:'監理重點', departments:'部門影響',
         impact_processes:'流程影響', attention_items:'注意事項', actions:'建議做法'};
@@ -22,10 +45,20 @@ function renderEventEvidence(analysis){
         return esc(source.title || '官方來源');
     };
     return `
-        ${analysis.verification_notice ? `<p class="detail-review-warning" role="status">${esc(analysis.verification_notice)}</p>` : ''}
+        <section class="detail-evidence-panel ${presentation.tone}" aria-label="分析依據核對">
+            <div class="detail-evidence-header">
+                <div>
+                    <strong>來源核對</strong>
+                    <p role="status">${esc(presentation.message)}</p>
+                </div>
+                ${presentation.canRetry && state.ai.enabled ? `<button type="button" class="detail-review-retry" id="retryEvidenceReview" ${isLoading ? 'disabled' : ''}>${isLoading ? '重新分析中…' : '重新分析'}</button>` : ''}
+            </div>
+            ${updateFailed && presentation.tone === 'complete' ? '<p class="detail-review-update">本次更新未完成，目前顯示前次已核對的分析結果。</p>' : ''}
+        ${review ? `
         <details class="block detail-review">
-            <summary>查看分析依據與核對結果</summary>
+            <summary>查看原文與核對明細</summary>
             <p>核對 ${esc(review.requested)} 項，保留 ${esc(review.supported)} 項，省略 ${esc(review.withheld)} 項。</p>
+            ${analysis.verification_notice ? `<p>${esc(analysis.verification_notice)}</p>` : ''}
             <p>採模型判讀、條件及金額檢查，仍可能誤判或漏判；法規適用性須由專業人員確認。</p>
             ${review.source_is_excerpt ? '<p>本次只核對生成時使用的來源節錄，未涵蓋全文。</p>' : ''}
             ${review.program_facts ? `<p>${esc(review.program_facts)}。這部分由程式整理，未計入模型核對項數。</p>` : ''}
@@ -33,7 +66,8 @@ function renderEventEvidence(analysis){
                 <b>${esc(labels[row.id.split(':')[0]] || '分析內容')} · ${row.status === 'supported' ? '保留' : (row.status === 'unverified' ? '未完成核對' : '省略')}</b>
                 ${row.status === 'supported' ? `<p>${esc(row.text)}</p>${(row.citations || []).map(citation=>`<blockquote>${esc(citation.quote)}<br>${link(sources.get(citation.source_id) || {})}</blockquote>`).join('')}` : `<p>${esc(row.reason)}</p>`}
             </div>`).join('')}
-        </details>`;
+        </details>` : ''}
+        </section>`;
 }
 
 function renderDetail(
@@ -102,9 +136,9 @@ function renderDetail(
     const showAnalysisValues =
         isAI || aiFailed || aiHasInsufficientContent;
     let analysisStatus = isAI ? 'AI 分析' : (state.ai.enabled ? (aiHasInsufficientContent ? 'AI 分析未完成' : 'AI 待分析') : '初步整理');
-    if(aiFailed) analysisStatus = isAI ? '重新分析未完成，保留原結果' : 'AI 分析未完成';
-    if(analysis.support_review?.unverified > 0) analysisStatus = '依據核對未完成';
+    if(aiFailed && !isAI) analysisStatus = 'AI 分析未完成';
     if(aiIsLoading) analysisStatus = isAI ? '重新分析中…' : 'AI 分析中…';
+    const reviewPresentation = eventReviewPresentation(analysis);
 
     const unresolvedAiFields =
         isAI
@@ -238,6 +272,7 @@ function renderDetail(
                 <span id="aiAnalysisStatus" role="status" class="workflow ${aiIsLoading ? 'ai-loading' : (isAI ? 'ai' : '')}">
                     ${esc(analysisStatus)}
                 </span>
+                ${reviewPresentation ? `<span id="aiReviewStatus" class="workflow review-${reviewPresentation.tone}" title="${esc(reviewPresentation.message)}">${esc(reviewPresentation.label)}</span>` : ''}
 
 
             </div>
@@ -254,7 +289,7 @@ function renderDetail(
 
             <p>${esc(formatEventDate(event))} · ${esc(event.source || '官方資料')}</p>
             ${!isAI && analysisNote ? `<p class="detail-source-note">${esc(analysisNote)}</p>` : ''}
-            ${unresolvedAiFields.length ? `<p class="detail-source-note">${esc(unresolvedAiFields.join('、'))}尚無法由目前來源確認。</p>` : ''}
+            ${unresolvedAiFields.length ? `<p class="detail-source-note">${esc(unresolvedAiFields.join('、'))}的分級依據尚待確認，目前暫不顯示評級。</p>` : ''}
 
 
             ${
@@ -336,7 +371,7 @@ function renderDetail(
 
         </div>
 
-        ${renderEventEvidence(analysis)}
+        ${renderEventEvidence(analysis, {isLoading:aiIsLoading, updateFailed:aiFailed})}
 
         <div class="block">
 
@@ -504,7 +539,7 @@ function renderDetail(
                     `
                     <div class="empty">
 
-                        尚待確認可能受影響的單位。
+                        目前尚無可列示的部門影響判讀，待完成適用性評估後確認。
 
                     </div>
                     `
@@ -572,7 +607,7 @@ function renderDetail(
                 `
                 <div class="empty">
 
-                    ${analysis.support_review ? '目前沒有可保留的注意事項，請確認官方原文。' : '尚無額外注意事項。'}
+                    ${analysis.support_review ? '目前尚無具充分依據的注意事項，可參閱官方原文。' : '尚無額外注意事項。'}
 
                 </div>
                 `
@@ -798,8 +833,9 @@ function renderDetail(
             }
         };
 
-    const retryAIButton = $('retryAI');
-    if(retryAIButton){
+    for(const id of ['retryAI', 'retryEvidenceReview']){
+        const retryAIButton = $(id);
+        if(!retryAIButton) continue;
         retryAIButton.onclick = () => {
             state.aiFailed.delete(event.id);
             state.aiRequested.delete(event.id);

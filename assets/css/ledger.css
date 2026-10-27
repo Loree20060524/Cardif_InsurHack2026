@@ -608,6 +608,77 @@ body.ledger-app .advanced-filter-actions {
 .detail-review-item blockquote { margin: 8px 0; padding: 8px 12px; border-left: 2px solid #bdd4cc; font-size: 14px; }
 .detail-review-item a { color: #08705e; font-size: 12px; }
 
+.d-dossier .workflow.review-complete {
+    border-color: #ceded7 !important;
+    background: #f4f8f5 !important;
+    color: #45685b !important;
+}
+
+.d-dossier .workflow.review-pending {
+    border-color: #e5d7b5 !important;
+    background: #fbf7ed !important;
+    color: #80632d !important;
+}
+
+.detail-evidence-panel {
+    margin-top: 16px;
+    padding: 13px 15px;
+    border: 1px solid #dce7e2;
+    border-radius: 6px;
+    background: #f7faf8;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.detail-evidence-panel.pending {
+    border-color: #e7dfcd;
+    background: #fcfaf5;
+}
+
+.detail-evidence-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.detail-evidence-header > div { min-width: 0; }
+.detail-evidence-header strong { color: #3f5f53; font-size: 12px; }
+.detail-evidence-panel.pending strong { color: #80632d; }
+.detail-evidence-header p { margin: 4px 0 0; overflow-wrap: anywhere; }
+.detail-review-update { margin: 8px 0 0; color: #80632d !important; }
+
+.detail-review-retry {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    border: 1px solid #cbd7d2;
+    border-radius: 4px;
+    background: #fff;
+    color: #315b4b;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.detail-review-retry:hover { background: #f0f5f2; }
+.detail-review-retry:focus-visible { outline: 2px solid #176b58; outline-offset: 3px; }
+.detail-review-retry:disabled { opacity: .65; cursor: wait; }
+.d-dossier .detail-evidence-panel .detail-review { margin-top: 10px; padding-top: 9px; font-size: 12px; }
+.detail .empty {
+    min-height: 0;
+    display: block !important;
+    padding: 12px 14px;
+    border: 1px dashed #dce4e2;
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1.7;
+    text-align: left;
+}
+
+@media (max-width: 640px) {
+    .detail-evidence-header { align-items: flex-start; flex-direction: column; gap: 9px; }
+}
+
 .d-dossier .ai-stat span {
     color: #7c898e;
     font-size: var(--detail-meta-size);

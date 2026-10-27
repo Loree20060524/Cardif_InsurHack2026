@@ -51,22 +51,67 @@ test('quotes and source titles are escaped and unsafe source URLs have no links'
     assert.doesNotMatch(markup,/<script>|<img|javascript:|<a href/);
 });
 
-test('detail distinguishes incomplete review and shows the rating basis and notice',()=>{
+test('detail keeps AI analysis and incomplete source review as separate statuses',()=>{
     const h=harness(); h.context.sample=report();
     h.run('state.events=[{id:"e",title:"監理公告",url:"https://example.com",analysis:sample}]; renderDetail(false)');
     const markup=h.elements.get('eventDetail').innerHTML;
-    assert.match(markup,/id="aiAnalysisStatus"[^>]*>\s*依據核對未完成/);
+    assert.match(markup,/id="aiAnalysisStatus"[^>]*>\s*AI 分析\s*<\/span>/);
+    assert.match(markup,/id="aiReviewStatus"[^>]*>部分依據待核對<\/span>/);
+    assert.match(markup,/本次有 1 項結論尚待完成來源核對/);
+    assert.match(markup,/id="retryEvidenceReview"/);
     assert.match(markup,/分級依據：涉及內部控制改善/);
     assert.match(markup,/建議關注部門/);
     assert.match(markup,/可能受影響部門（初步判讀）/);
-    assert.match(markup,/role="status">部分結論/);
-    assert.match(markup,/目前沒有可保留的注意事項/);
+    assert.doesNotMatch(markup,/不該顯示的未核對內容/);
+    assert.match(markup,/目前尚無具充分依據的注意事項/);
+});
+
+test('completed review reports withheld conclusions without claiming every conclusion was supported',()=>{
+    const h=harness(), sample=report();
+    sample.support_review.unverified=0;
+    sample.support_review.checks[1].status='insufficient';
+    h.context.sample=sample;
+    h.run('state.events=[{id:"e",title:"監理公告",analysis:sample}]; renderDetail(false)');
+    const markup=h.elements.get('eventDetail').innerHTML;
+    assert.match(markup,/id="aiAnalysisStatus"[^>]*>\s*AI 分析\s*<\/span>/);
+    assert.match(markup,/id="aiReviewStatus"[^>]*>依據已核對<\/span>/);
+    assert.match(markup,/保留 1 項具原文支持的內容；其餘 1 項未採用/);
+    assert.doesNotMatch(markup,/id="retryEvidenceReview"|不該顯示的未核對內容/);
+});
+
+test('loading and failed updates preserve the visible status of the previous reviewed result',()=>{
+    const h=harness(), sample=report(); sample.support_review.unverified=0;
+    h.context.sample=sample;
+    h.run('state.events=[{id:"e",title:"監理公告",analysis:sample}]; state.aiLoading.add("e"); renderDetail(false)');
+    let markup=h.elements.get('eventDetail').innerHTML;
+    assert.match(markup,/id="aiAnalysisStatus"[^>]*>\s*重新分析中…/);
+    assert.match(markup,/id="aiReviewStatus"[^>]*>依據已核對/);
+    h.run('state.aiLoading.delete("e"); state.aiFailed.add("e"); renderDetail(false)');
+    markup=h.elements.get('eventDetail').innerHTML;
+    assert.match(markup,/id="aiAnalysisStatus"[^>]*>\s*AI 分析\s*<\/span>/);
+    assert.match(markup,/本次更新未完成，目前顯示前次已核對的分析結果/);
+});
+
+test('the visible source-review retry analyzes the selected event and disables while loading',()=>{
+    const h=harness(), sample=report(); h.context.sample=sample;
+    const calls=[];
+    h.context.ensureAIAnalysis=(event,force)=>{calls.push([event.id,force]); h.context.state.aiLoading.add(event.id);};
+    h.run('state.events=[{id:"e",title:"監理公告",analysis:sample}]; renderDetail(false)');
+    h.elements.get('retryEvidenceReview').onclick();
+    assert.deepEqual(calls,[['e',true]]);
+    const markup=h.elements.get('eventDetail').innerHTML;
+    assert.match(markup,/id="retryEvidenceReview" disabled>重新分析中…/);
+    assert.match(markup,/id="aiReviewStatus"[^>]*>部分依據待核對/);
 });
 
 test('legacy AI results get a visible request to recheck sources',()=>{
     const h=harness();
     assert.match(h.run('renderEventEvidence({analysis_mode:"AI 深度分析"})'),/尚未做來源支持核對/);
     assert.equal(h.run('renderEventEvidence({analysis_mode:"規則備援"})'),'');
+    h.run('state.events=[{id:"e",title:"舊分析",analysis:{analysis_mode:"AI 深度分析"}}]; renderDetail(false)');
+    const markup=h.elements.get('eventDetail').innerHTML;
+    assert.match(markup,/id="aiReviewStatus"[^>]*>依據待核對/);
+    assert.doesNotMatch(markup,/依據已核對/);
 });
 
 test('an incomplete forced review preserves the previously reviewed result and allows retry',async()=>{

@@ -206,7 +206,7 @@ function renderProcesses(
 
             <div class="empty">
 
-                尚待確認可能受影響的流程。
+                目前尚無可列示的流程影響判讀，待完成適用性評估後確認。
 
             </div>
         `;
